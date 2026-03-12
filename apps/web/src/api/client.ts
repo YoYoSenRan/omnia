@@ -1,0 +1,42 @@
+import { API_BASE } from '@/lib/constants'
+
+export class ApiError extends Error {
+  status: number
+  body: unknown
+
+  constructor(status: number, body: unknown) {
+    super(`API Error ${status}`)
+    this.name = 'ApiError'
+    this.status = status
+    this.body = body
+  }
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...init?.headers,
+    },
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new ApiError(res.status, body)
+  }
+
+  return res.json() as Promise<T>
+}
+
+export const api = {
+  get: <T>(path: string) => request<T>(path),
+
+  post: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
+
+  put: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
+
+  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+}
