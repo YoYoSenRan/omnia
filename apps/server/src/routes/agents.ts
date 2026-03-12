@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import type { AdapterManager } from '../adapter'
+import { ok } from '../lib/response'
 
 export function agentRoutes(manager: AdapterManager) {
   const app = new Hono()
@@ -13,7 +14,7 @@ export function agentRoutes(manager: AdapterManager) {
       message: string
     }>()
     const result = await manager.getActive()!.sendAgentMessage(body)
-    return c.json(result)
+    return ok(c, result)
   })
 
   return app

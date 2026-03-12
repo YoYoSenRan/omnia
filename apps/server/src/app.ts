@@ -11,6 +11,8 @@ import { cronRoutes } from './routes/cron'
 import { workspaceRoutes } from './routes/workspace'
 import { sseRoutes } from './routes/sse'
 import { connectionRoutes } from './routes/connections'
+import { projectRoutes } from './routes/projects'
+import { ok, fail } from './lib/response'
 
 export function createApp(manager: AdapterManager) {
   const app = new Hono()
@@ -25,15 +27,17 @@ export function createApp(manager: AdapterManager) {
     if (c.req.path.startsWith('/api/workspace')) return next()
     if (c.req.path.startsWith('/api/events')) return next()
     if (c.req.path.startsWith('/api/connections')) return next()
+    if (c.req.path.startsWith('/api/projects')) return next()
     const active = manager.getActive()
     if (!active || !active.isConnected()) {
-      return c.json({ error: 'Gateway disconnected' }, 503)
+      return fail(c, 503, 'GATEWAY_DISCONNECTED', 'Gateway disconnected')
     }
     return next()
   })
 
   // Routes
   app.route('/api/connections', connectionRoutes(manager))
+  app.route('/api/projects', projectRoutes(manager))
   app.route('/api/agents', agentRoutes(manager))
   app.route('/api/skills', skillRoutes(manager))
   app.route('/api/sessions', sessionRoutes(manager))
@@ -46,7 +50,7 @@ export function createApp(manager: AdapterManager) {
   // System status (no Gateway needed)
   app.get('/api/status', (c) => {
     const active = manager.getActive()
-    return c.json({
+    return ok(c, {
       gateway: active?.getStatus() ?? 'disconnected',
       uptime: process.uptime(),
     })
@@ -56,10 +60,10 @@ export function createApp(manager: AdapterManager) {
   app.get('/api/health', async (c) => {
     const active = manager.getActive()
     if (!active || !active.isConnected()) {
-      return c.json({ error: 'Gateway disconnected' }, 503)
+      return fail(c, 503, 'GATEWAY_DISCONNECTED', 'Gateway disconnected')
     }
     const health = await active.getHealth()
-    return c.json(health)
+    return ok(c, health)
   })
 
   return app

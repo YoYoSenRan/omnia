@@ -43,26 +43,48 @@ export interface ConnectChallenge {
   ts: number
 }
 
+export type GatewayClientId =
+  | 'webchat-ui' | 'openclaw-control-ui' | 'webchat' | 'cli'
+  | 'gateway-client' | 'openclaw-macos' | 'openclaw-ios'
+  | 'openclaw-android' | 'node-host' | 'test' | 'fingerprint'
+  | 'openclaw-probe'
+
+export type GatewayClientMode =
+  | 'webchat' | 'cli' | 'ui' | 'backend' | 'node' | 'probe' | 'test'
+
 export interface ConnectParams {
   minProtocol: number
   maxProtocol: number
   client: {
-    id: string
+    id: GatewayClientId
+    displayName?: string
     version: string
     platform: string
-    mode: 'operator' | 'node'
+    deviceFamily?: string
+    modelIdentifier?: string
+    mode: GatewayClientMode
+    instanceId?: string
   }
-  role: 'operator' | 'node'
-  scopes: string[]
-  caps: string[]
-  commands: string[]
-  permissions: Record<string, boolean>
-  auth: { token: string }
-  locale: string
-  userAgent: string
-  device: {
+  caps?: string[]
+  commands?: string[]
+  permissions?: Record<string, boolean>
+  pathEnv?: string
+  role?: string
+  scopes?: string[]
+  device?: {
     id: string
+    publicKey: string
+    signature: string
+    signedAt: number
+    nonce: string
   }
+  auth?: {
+    token?: string
+    deviceToken?: string
+    password?: string
+  }
+  locale?: string
+  userAgent?: string
 }
 
 export interface HelloOkPayload {

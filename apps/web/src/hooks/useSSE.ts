@@ -5,21 +5,22 @@ import type { ConnectionStatus } from '@omnia/types'
 
 export function useSSE() {
   const sourceRef = useRef<EventSource | null>(null)
-  const { setStatus, setUptime } = useConnectionStore()
+  const closedRef = useRef(false)
 
   useEffect(() => {
-    const es = new EventSource(`${API_BASE}/api/events`)
+    closedRef.current = false
+    const es = new EventSource(`${API_BASE}/api/events/stream`)
     sourceRef.current = es
 
     es.addEventListener('connection', (e) => {
       const data = JSON.parse(e.data) as { status: ConnectionStatus }
-      setStatus(data.status)
+      useConnectionStore.getState().setStatus(data.status)
     })
 
     es.addEventListener('status', (e) => {
       const data = JSON.parse(e.data) as { gateway: ConnectionStatus; uptime: number }
-      setStatus(data.gateway)
-      setUptime(data.uptime)
+      useConnectionStore.getState().setStatus(data.gateway)
+      useConnectionStore.getState().setUptime(data.uptime)
     })
 
     es.addEventListener('gateway', (e) => {
@@ -28,12 +29,16 @@ export function useSSE() {
     })
 
     es.onerror = () => {
-      setStatus('disconnected')
+      // EventSource auto-reconnects; only mark disconnected when it truly gives up
+      if (!closedRef.current && es.readyState === EventSource.CLOSED) {
+        useConnectionStore.getState().setStatus('disconnected')
+      }
     }
 
     return () => {
+      closedRef.current = true
       es.close()
       sourceRef.current = null
     }
-  }, [setStatus, setUptime])
+  }, [])
 }

@@ -9,6 +9,7 @@ import {
   deleteConnection,
   deactivateAll,
 } from '../db'
+import { ok, fail } from '../lib/response'
 
 export function connectionRoutes(manager: AdapterManager) {
   const app = new Hono()
@@ -29,7 +30,7 @@ export function connectionRoutes(manager: AdapterManager) {
       }
     })
 
-    return c.json(result)
+    return ok(c, result)
   })
 
   // Create new connection
@@ -52,14 +53,14 @@ export function connectionRoutes(manager: AdapterManager) {
     }
 
     createConnection(profile)
-    return c.json(profile, 201)
+    return ok(c, profile, 201)
   })
 
   // Update connection
   app.put('/:id', async (c) => {
     const id = c.req.param('id')
     const existing = getConnection(id)
-    if (!existing) return c.json({ error: 'Connection not found' }, 404)
+    if (!existing) return fail(c, 404, 'NOT_FOUND', 'Connection not found')
 
     const body = await c.req.json<{
       name?: string
@@ -74,31 +75,31 @@ export function connectionRoutes(manager: AdapterManager) {
 
     updateConnection(id, body)
     const updated = getConnection(id)
-    return c.json(updated)
+    return ok(c, updated)
   })
 
   // Delete connection
   app.delete('/:id', (c) => {
     const id = c.req.param('id')
     const existing = getConnection(id)
-    if (!existing) return c.json({ error: 'Connection not found' }, 404)
+    if (!existing) return fail(c, 404, 'NOT_FOUND', 'Connection not found')
 
     manager.disconnect(id)
     deleteConnection(id)
-    return c.json({ ok: true })
+    return ok(c, null)
   })
 
   // Connect
   app.post('/:id/connect', async (c) => {
     const id = c.req.param('id')
     const profile = getConnection(id)
-    if (!profile) return c.json({ error: 'Connection not found' }, 404)
+    if (!profile) return fail(c, 404, 'NOT_FOUND', 'Connection not found')
 
     try {
       await manager.connect(profile)
-      return c.json({ ok: true, status: 'connected' })
+      return ok(c, { status: 'connected' })
     } catch (err) {
-      return c.json({ error: (err as Error).message }, 502)
+      return fail(c, 502, 'GATEWAY_ERROR', (err as Error).message)
     }
   })
 
@@ -106,20 +107,20 @@ export function connectionRoutes(manager: AdapterManager) {
   app.post('/:id/disconnect', (c) => {
     const id = c.req.param('id')
     const profile = getConnection(id)
-    if (!profile) return c.json({ error: 'Connection not found' }, 404)
+    if (!profile) return fail(c, 404, 'NOT_FOUND', 'Connection not found')
 
     manager.disconnect(id)
-    return c.json({ ok: true, status: 'disconnected' })
+    return ok(c, { status: 'disconnected' })
   })
 
   // Activate
   app.post('/:id/activate', (c) => {
     const id = c.req.param('id')
     const profile = getConnection(id)
-    if (!profile) return c.json({ error: 'Connection not found' }, 404)
+    if (!profile) return fail(c, 404, 'NOT_FOUND', 'Connection not found')
 
     if (!manager.isConnected(id)) {
-      return c.json({ error: 'Connection is not connected' }, 400)
+      return fail(c, 400, 'INVALID_REQUEST', 'Connection is not connected')
     }
 
     // Update DB: deactivate all, then activate this one
@@ -127,7 +128,7 @@ export function connectionRoutes(manager: AdapterManager) {
     updateConnection(id, { isActive: true })
 
     manager.setActive(id)
-    return c.json({ ok: true })
+    return ok(c, null)
   })
 
   return app

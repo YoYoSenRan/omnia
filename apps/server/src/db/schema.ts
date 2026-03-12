@@ -9,3 +9,13 @@ export const connections = sqliteTable('connections', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 })
+
+export const projects = sqliteTable('projects', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  gatewayUrl: text('gateway_url').notNull(),
+  token: text('token'),
+  isLastActive: integer('is_last_active', { mode: 'boolean' }).notNull().default(false),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})

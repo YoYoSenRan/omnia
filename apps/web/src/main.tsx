@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { router } from './router'
 import './i18n'
+import './stores/theme-store'
 import './styles/globals.css'
 
 const queryClient = new QueryClient({

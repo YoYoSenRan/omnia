@@ -23,22 +23,15 @@ export function buildConnectParams(token?: string): ConnectParams {
     minProtocol: 3,
     maxProtocol: 3,
     client: {
-      id: 'omnia',
+      id: 'gateway-client',
       version: '0.0.1',
       platform: process.platform,
-      mode: 'operator',
+      mode: 'backend',
     },
-    role: 'operator',
-    scopes: ['operator.read', 'operator.write', 'operator.admin', 'operator.approvals'],
     caps: [],
-    commands: [],
-    permissions: {},
-    auth: { token: token ?? '' },
+    ...(token ? { auth: { token } } : {}),
     locale: 'en-US',
     userAgent: 'omnia-server/0.0.1',
-    device: {
-      id: 'omnia-server',
-    },
   }
 }
 

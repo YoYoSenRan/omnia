@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -15,19 +16,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { staggerContainer, staggerItem } from '@/lib/motion'
-import { Plus, MoreHorizontal, Pencil, Trash2, Power, PowerOff, Star } from 'lucide-react'
-import type { ConnectionProfile, SystemStatus } from '@omnia/types'
+import { Pencil, Trash2, Sun, Moon, Monitor } from 'lucide-react'
+import { useProjectStore } from '@/stores/project-store'
+import { useThemeStore } from '@/stores/theme-store'
+import type { Project, SystemStatus } from '@omnia/types'
 
-type ConnectionWithStatus = ConnectionProfile & {
-  status: string
-}
+type ProjectWithStatus = Project & { status: string }
 
 const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   connected: 'default',
@@ -36,78 +31,27 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
   disconnected: 'outline',
 }
 
-function ConnectionForm({
-  initial,
-  onSubmit,
-  onCancel,
-  loading,
-}: {
-  initial?: { name: string; gatewayUrl: string; token?: string }
-  onSubmit: (data: { name: string; gatewayUrl: string; token?: string }) => void
-  onCancel: () => void
-  loading: boolean
-}) {
-  const { t } = useTranslation()
-  const [name, setName] = useState(initial?.name ?? '')
-  const [gatewayUrl, setGatewayUrl] = useState(initial?.gatewayUrl ?? 'ws://localhost:18789')
-  const [token, setToken] = useState(initial?.token ?? '')
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        onSubmit({ name, gatewayUrl, token: token || undefined })
-      }}
-      className="flex flex-col gap-4"
-    >
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-foreground">{t('settings.name')}</label>
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t('settings.namePlaceholder')}
-          required
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-foreground">{t('settings.gatewayUrl')}</label>
-        <Input
-          value={gatewayUrl}
-          onChange={(e) => setGatewayUrl(e.target.value)}
-          placeholder="ws://localhost:18789"
-          required
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-foreground">{t('settings.token')}</label>
-        <Input
-          type="password"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          placeholder={t('settings.optional')}
-        />
-      </div>
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          {t('common.cancel')}
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? t('common.saving') : t('common.save')}
-        </Button>
-      </DialogFooter>
-    </form>
-  )
-}
-
 export function Settings() {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editing, setEditing] = useState<ConnectionWithStatus | null>(null)
+  const theme = useThemeStore((s) => s.theme)
+  const setTheme = useThemeStore((s) => s.setTheme)
+  const currentProject = useProjectStore((s) => s.currentProject)
+  const setCurrentProject = useProjectStore((s) => s.setCurrentProject)
+  const [editingProject, setEditingProject] = useState(false)
+  const [editingConnection, setEditingConnection] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
 
-  const { data: connections = [] } = useQuery({
-    queryKey: ['connections'],
-    queryFn: () => api.get<ConnectionWithStatus[]>('/api/connections'),
+  // Project name editing state
+  const [projectName, setProjectName] = useState('')
+  // Connection editing state
+  const [gatewayUrl, setGatewayUrl] = useState('')
+  const [token, setToken] = useState('')
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => api.get<ProjectWithStatus[]>('/api/projects'),
     refetchInterval: 3000,
   })
 
@@ -117,37 +61,33 @@ export function Settings() {
     refetchInterval: 5000,
   })
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['connections'] })
+  const currentWithStatus = projects.find((p) => p.id === currentProject?.id)
 
-  const createMutation = useMutation({
-    mutationFn: (data: { name: string; gatewayUrl: string; token?: string }) =>
-      api.post('/api/connections', data),
-    onSuccess: () => { invalidate(); setDialogOpen(false) },
-  })
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['projects'] })
 
   const updateMutation = useMutation({
     mutationFn: ({ id, ...data }: { id: string; name?: string; gatewayUrl?: string; token?: string }) =>
-      api.put(`/api/connections/${id}`, data),
-    onSuccess: () => { invalidate(); setEditing(null) },
+      api.put(`/api/projects/${id}`, data),
+    onSuccess: (_, vars) => {
+      invalidate()
+      if (currentProject && vars.name) {
+        setCurrentProject({ ...currentProject, name: vars.name })
+      }
+      setEditingProject(false)
+      setEditingConnection(false)
+    },
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/api/connections/${id}`),
-    onSuccess: invalidate,
+    mutationFn: (id: string) => api.delete(`/api/projects/${id}`),
+    onSuccess: () => {
+      setDeleteConfirm(false)
+      navigate('/', { replace: true })
+    },
   })
 
-  const connectMutation = useMutation({
-    mutationFn: (id: string) => api.post(`/api/connections/${id}/connect`),
-    onSuccess: invalidate,
-  })
-
-  const disconnectMutation = useMutation({
-    mutationFn: (id: string) => api.post(`/api/connections/${id}/disconnect`),
-    onSuccess: invalidate,
-  })
-
-  const activateMutation = useMutation({
-    mutationFn: (id: string) => api.post(`/api/connections/${id}/activate`),
+  const reconnectMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/api/projects/${id}/activate`),
     onSuccess: invalidate,
   })
 
@@ -158,107 +98,143 @@ export function Settings() {
       initial="initial"
       animate="animate"
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">{t('settings.title')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t('settings.subtitle')}
-          </p>
-        </div>
-        <Button onClick={() => setDialogOpen(true)} size="sm">
-          <Plus className="mr-1.5 h-4 w-4" />
-          {t('settings.addConnection')}
-        </Button>
+      <div>
+        <h1 className="text-2xl font-semibold text-foreground">{t('settings.title')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t('settings.subtitle')}
+        </p>
       </div>
 
-      {/* Connection list */}
-      <motion.div variants={staggerItem} className="flex flex-col gap-3">
-        {connections.length === 0 && (
-          <Card>
-            <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              {t('settings.noConnections')}
-            </CardContent>
-          </Card>
-        )}
-        {connections.map((conn) => (
-          <Card
-            key={conn.id}
-            className={conn.isActive ? 'ring-1 ring-primary/50' : undefined}
-          >
-            <CardContent className="flex items-center justify-between py-4">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">{conn.name}</span>
-                  {conn.isActive && (
-                    <Badge variant="default" className="text-[10px]">{t('settings.active')}</Badge>
-                  )}
-                  <Badge variant={statusVariant[conn.status] ?? 'outline'}>
-                    {t(`status.${conn.status}`, conn.status)}
-                  </Badge>
-                </div>
-                <span className="text-xs text-muted-foreground">{conn.gatewayUrl}</span>
+      {/* Project Settings */}
+      <motion.div variants={staggerItem}>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>{t('project.projectSettings')}</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setProjectName(currentProject?.name ?? '')
+                setEditingProject(true)
+              }}
+            >
+              <Pencil className="mr-1 h-3.5 w-3.5" />
+              {t('common.edit')}
+            </Button>
+          </CardHeader>
+          <Separator />
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t('project.projectName')}</span>
+                <span className="text-sm text-foreground">{currentProject?.name ?? '—'}</span>
               </div>
+            </div>
+            <div className="mt-6">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setDeleteConfirm(true)}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                {t('project.deleteProject')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-              <div className="flex items-center gap-2">
-                {conn.status === 'disconnected' ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => connectMutation.mutate(conn.id)}
-                    disabled={connectMutation.isPending}
-                  >
-                    <Power className="mr-1 h-3.5 w-3.5" />
-                    {t('common.connect')}
-                  </Button>
-                ) : conn.status === 'connected' ? (
-                  <>
-                    {!conn.isActive && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => activateMutation.mutate(conn.id)}
-                        disabled={activateMutation.isPending}
-                      >
-                        <Star className="mr-1 h-3.5 w-3.5" />
-                        {t('common.activate')}
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => disconnectMutation.mutate(conn.id)}
-                      disabled={disconnectMutation.isPending}
-                    >
-                      <PowerOff className="mr-1 h-3.5 w-3.5" />
-                      {t('common.disconnect')}
-                    </Button>
-                  </>
-                ) : null}
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setEditing(conn)}>
-                      <Pencil className="mr-2 h-3.5 w-3.5" />
-                      {t('common.edit')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => deleteMutation.mutate(conn.id)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-3.5 w-3.5" />
-                      {t('common.delete')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+      {/* Current Connection */}
+      <motion.div variants={staggerItem}>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>{t('project.currentConnection')}</CardTitle>
+            <div className="flex items-center gap-2">
+              {currentWithStatus && (
+                <Badge variant={statusVariant[currentWithStatus.status] ?? 'outline'}>
+                  {t(`status.${currentWithStatus.status}`, currentWithStatus.status)}
+                </Badge>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setGatewayUrl(currentProject?.gatewayUrl ?? '')
+                  setToken('')
+                  setEditingConnection(true)
+                }}
+              >
+                <Pencil className="mr-1 h-3.5 w-3.5" />
+                {t('common.edit')}
+              </Button>
+            </div>
+          </CardHeader>
+          <Separator />
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t('settings.gatewayUrl')}</span>
+                <span className="text-sm text-foreground">{currentProject?.gatewayUrl ?? '—'}</span>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t('settings.token')}</span>
+                <span className="text-sm text-foreground">
+                  {currentProject?.token ? '••••••••' : '—'}
+                </span>
+              </div>
+            </div>
+            {currentWithStatus?.status === 'disconnected' && (
+              <div className="mt-4">
+                <Button
+                  size="sm"
+                  onClick={() => currentProject && reconnectMutation.mutate(currentProject.id)}
+                  disabled={reconnectMutation.isPending}
+                >
+                  {t('common.connect')}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Theme */}
+      <motion.div variants={staggerItem}>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('settings.theme')}</CardTitle>
+          </CardHeader>
+          <Separator />
+          <CardContent className="pt-6">
+            <p className="mb-4 text-sm text-muted-foreground">{t('settings.themeDesc')}</p>
+            <div className="flex gap-2">
+              <Button
+                variant={theme === 'light' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('light')}
+              >
+                <Sun className="mr-1 h-3.5 w-3.5" />
+                {t('settings.light')}
+              </Button>
+              <Button
+                variant={theme === 'dark' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('dark')}
+              >
+                <Moon className="mr-1 h-3.5 w-3.5" />
+                {t('settings.dark')}
+              </Button>
+              <Button
+                variant={theme === 'system' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('system')}
+              >
+                <Monitor className="mr-1 h-3.5 w-3.5" />
+                {t('settings.system')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* Language */}
@@ -320,37 +296,108 @@ export function Settings() {
         </Card>
       </motion.div>
 
-      {/* Create Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Edit Project Name Dialog */}
+      <Dialog open={editingProject} onOpenChange={setEditingProject}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('settings.addConnection')}</DialogTitle>
+            <DialogTitle>{t('project.editProject')}</DialogTitle>
           </DialogHeader>
-          <ConnectionForm
-            onSubmit={(data) => createMutation.mutate(data)}
-            onCancel={() => setDialogOpen(false)}
-            loading={createMutation.isPending}
-          />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (currentProject) {
+                updateMutation.mutate({ id: currentProject.id, name: projectName })
+              }
+            }}
+            className="flex flex-col gap-4"
+          >
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">{t('project.projectName')}</label>
+              <Input
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingProject(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? t('common.saving') : t('common.save')}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
-      <Dialog open={!!editing} onOpenChange={(open) => { if (!open) setEditing(null) }}>
+      {/* Edit Connection Dialog */}
+      <Dialog open={editingConnection} onOpenChange={setEditingConnection}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('settings.editConnection')}</DialogTitle>
           </DialogHeader>
-          {editing && (
-            <ConnectionForm
-              initial={{
-                name: editing.name,
-                gatewayUrl: editing.gatewayUrl,
-              }}
-              onSubmit={(data) => updateMutation.mutate({ id: editing.id, ...data })}
-              onCancel={() => setEditing(null)}
-              loading={updateMutation.isPending}
-            />
-          )}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (currentProject) {
+                updateMutation.mutate({
+                  id: currentProject.id,
+                  gatewayUrl,
+                  token: token || undefined,
+                })
+              }
+            }}
+            className="flex flex-col gap-4"
+          >
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">{t('settings.gatewayUrl')}</label>
+              <Input
+                value={gatewayUrl}
+                onChange={(e) => setGatewayUrl(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">{t('settings.token')}</label>
+              <Input
+                type="password"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder={t('settings.optional')}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingConnection(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? t('common.saving') : t('common.save')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('project.deleteProject')}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{t('project.deleteConfirm')}</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirm(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => currentProject && deleteMutation.mutate(currentProject.id)}
+              disabled={deleteMutation.isPending}
+            >
+              {t('common.delete')}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </motion.div>

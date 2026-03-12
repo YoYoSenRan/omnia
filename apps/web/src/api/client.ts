@@ -1,14 +1,15 @@
+import type { ApiResponse } from '@omnia/types'
 import { API_BASE } from '@/lib/constants'
 
 export class ApiError extends Error {
   status: number
-  body: unknown
+  code: string | number
 
-  constructor(status: number, body: unknown) {
-    super(`API Error ${status}`)
+  constructor(status: number, code: string | number, msg: string) {
+    super(msg)
     this.name = 'ApiError'
     this.status = status
-    this.body = body
+    this.code = code
   }
 }
 
@@ -21,12 +22,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   })
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => null)
-    throw new ApiError(res.status, body)
+  const json = await res.json() as ApiResponse<T>
+
+  if (!json.ok) {
+    throw new ApiError(res.status, json.code, json.msg)
   }
 
-  return res.json() as Promise<T>
+  return json.data as T
 }
 
 export const api = {

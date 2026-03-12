@@ -1,5 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
-import { AppShell } from '@/components/layout/AppShell'
+import { ProjectGate } from '@/pages/ProjectGate'
+import { Welcome } from '@/pages/Welcome'
+import { ProjectShell } from '@/components/layout/ProjectShell'
 import { Dashboard } from '@/pages/Dashboard'
 import { Agents } from '@/pages/Agents'
 import { Skills } from '@/pages/Skills'
@@ -8,9 +10,11 @@ import { Chat } from '@/pages/Chat'
 import { Settings } from '@/pages/Settings'
 
 export const router = createBrowserRouter([
+  { path: '/', element: <ProjectGate /> },
+  { path: '/welcome', element: <Welcome /> },
   {
-    path: '/',
-    element: <AppShell />,
+    path: '/p/:projectId',
+    element: <ProjectShell />,
     children: [
       { index: true, element: <Dashboard /> },
       { path: 'agents', element: <Agents /> },

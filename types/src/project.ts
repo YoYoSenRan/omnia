@@ -34,3 +34,21 @@ export interface ProjectInstance {
   createdAt: string
   updatedAt: string
 }
+
+export interface Project {
+  id: string
+  name: string
+  gatewayUrl: string
+  token?: string
+  isLastActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProjectStatusInfo {
+  id: string
+  name: string
+  gatewayUrl: string
+  status: 'disconnected' | 'connecting' | 'authenticating' | 'connected'
+  isLastActive: boolean
+}
