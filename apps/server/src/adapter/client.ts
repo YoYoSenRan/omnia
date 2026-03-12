@@ -216,6 +216,23 @@ export class OpenClawAdapter extends EventEmitter {
     return this.request('models.list')
   }
 
+  // Agent management
+  async listAgents() {
+    return this.request('agents.list')
+  }
+
+  async createAgent(params: { name: string; emoji?: string; model?: string }) {
+    return this.request('agents.create', params)
+  }
+
+  async updateAgent(id: string, params: { name?: string; emoji?: string; model?: string }) {
+    return this.request('agents.update', { id, ...params })
+  }
+
+  async deleteAgent(id: string) {
+    return this.request('agents.delete', { id })
+  }
+
   // Agent operations
   async sendAgentMessage(params: {
     agent?: string

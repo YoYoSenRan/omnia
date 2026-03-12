@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { ProjectGate } from '@/pages/ProjectGate'
 import { Welcome } from '@/pages/Welcome'
-import { ProjectShell } from '@/components/layout/ProjectShell'
+import { ProjectShell } from '@/layout/ProjectShell'
 import { Dashboard } from '@/pages/Dashboard'
 import { Agents } from '@/pages/Agents'
 import { Skills } from '@/pages/Skills'

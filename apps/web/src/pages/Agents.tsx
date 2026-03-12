@@ -1,10 +1,19 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +24,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Bot, Plus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { staggerContainer, staggerItem, cardHover } from '@/lib/motion'
-import type { Agent } from '@omnia/types'
+import type { Agent, AgentsListResponse } from '@omnia/types'
 
 const statusBadge: Record<string, string> = {
   idle: 'bg-muted-foreground/15 text-muted-foreground border-muted-foreground/30',
@@ -25,10 +34,87 @@ const statusBadge: Record<string, string> = {
 
 export function Agents() {
   const { t } = useTranslation()
-  const { data: agents, isLoading, error } = useQuery({
+  const queryClient = useQueryClient()
+
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null)
+
+  // Form state
+  const [name, setName] = useState('')
+  const [emoji, setEmoji] = useState('')
+  const [model, setModel] = useState('')
+
+  const { data, isLoading, error } = useQuery({
     queryKey: ['agents'],
-    queryFn: () => api.get<Agent[]>('/api/agents'),
+    queryFn: () => api.get<AgentsListResponse>('/api/agents'),
   })
+  const agents = data?.agents
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['agents'] })
+
+  const createMutation = useMutation({
+    mutationFn: (params: { name: string; emoji?: string; model?: string }) =>
+      api.post('/api/agents', params),
+    onSuccess: () => {
+      invalidate()
+      closeForm()
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, ...params }: { id: string; name?: string; emoji?: string; model?: string }) =>
+      api.put(`/api/agents/${id}`, params),
+    onSuccess: () => {
+      invalidate()
+      closeForm()
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/agents/${id}`),
+    onSuccess: () => {
+      invalidate()
+      setDeleteTarget(null)
+    },
+  })
+
+  const saveMutation = editingAgent ? updateMutation : createMutation
+
+  function openCreate() {
+    setEditingAgent(null)
+    setName('')
+    setEmoji('')
+    setModel('')
+    setFormOpen(true)
+  }
+
+  function openEdit(agent: Agent) {
+    setEditingAgent(agent)
+    setName(agent.name)
+    setEmoji(agent.emoji ?? '')
+    setModel(agent.model ?? '')
+    setFormOpen(true)
+  }
+
+  function closeForm() {
+    setFormOpen(false)
+    setEditingAgent(null)
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const params = {
+      name,
+      emoji: emoji || undefined,
+      model: model || undefined,
+    }
+    if (editingAgent) {
+      updateMutation.mutate({ id: editingAgent.id, ...params })
+    } else {
+      createMutation.mutate(params)
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,7 +125,7 @@ export function Agents() {
             {t('agents.subtitle')}
           </p>
         </div>
-        <Button>
+        <Button onClick={openCreate}>
           <Plus data-icon="inline-start" />
           {t('agents.newAgent')}
         </Button>
@@ -97,9 +183,11 @@ export function Agents() {
                       </Avatar>
                       <div>
                         <h3 className="text-sm font-medium text-foreground">{agent.name}</h3>
-                        <Badge variant="outline" className={`mt-1 ${statusBadge[agent.status] ?? statusBadge.idle}`}>
-                          {agent.status}
-                        </Badge>
+                        {agent.status && (
+                          <Badge variant="outline" className={`mt-1 ${statusBadge[agent.status] ?? statusBadge.idle}`}>
+                            {agent.status}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <DropdownMenu>
@@ -114,11 +202,14 @@ export function Agents() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuGroup>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEdit(agent)}>
                             <Pencil data-icon="inline-start" />
                             {t('common.edit')}
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => setDeleteTarget(agent)}
+                          >
                             <Trash2 data-icon="inline-start" />
                             {t('common.delete')}
                           </DropdownMenuItem>
@@ -137,6 +228,76 @@ export function Agents() {
           ))}
         </motion.div>
       )}
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={formOpen} onOpenChange={(open) => { if (!open) closeForm() }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingAgent ? t('agents.editAgent') : t('agents.newAgent')}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">{t('agents.name')}</label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t('agents.namePlaceholder')}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">{t('agents.emoji')}</label>
+              <Input
+                value={emoji}
+                onChange={(e) => setEmoji(e.target.value)}
+                placeholder={t('agents.emojiPlaceholder')}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">{t('agents.model', { model: '' }).replace(': ', '')}</label>
+              <Input
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="e.g. gpt-4o"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeForm}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? t('common.saving') : t('common.save')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('agents.deleteAgent')}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t('agents.deleteConfirm', { name: deleteTarget?.name })}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+              disabled={deleteMutation.isPending}
+            >
+              {t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -21,6 +21,12 @@ export function createApp(manager: AdapterManager) {
   app.use('*', logger())
   app.use('/api/*', cors())
 
+  // Global error handler
+  app.onError((err, c) => {
+    console.error('[API Error]', err.message)
+    return fail(c, 500, 'INTERNAL_ERROR', err.message)
+  })
+
   // Gateway connection guard (skip status, workspace, events, connections)
   app.use('/api/*', async (c, next) => {
     if (c.req.path === '/api/status') return next()

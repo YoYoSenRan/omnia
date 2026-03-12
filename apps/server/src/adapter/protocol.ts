@@ -28,6 +28,8 @@ export function buildConnectParams(token?: string): ConnectParams {
       platform: process.platform,
       mode: 'backend',
     },
+    role: 'operator',
+    scopes: ['operator.admin'],
     caps: [],
     ...(token ? { auth: { token } } : {}),
     locale: 'en-US',

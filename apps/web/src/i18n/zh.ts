@@ -31,10 +31,17 @@ export default {
     title: '智能体',
     subtitle: '管理你的 OpenClaw 智能体',
     newAgent: '新建智能体',
+    editAgent: '编辑智能体',
+    deleteAgent: '删除智能体',
+    deleteConfirm: '确定要删除智能体「{{name}}」吗？此操作无法撤销。',
     loadError: '加载智能体失败。请确保网关已连接。',
     empty: '暂无智能体',
     emptyDesc: '创建你的第一个智能体以开始使用',
     model: '模型：{{model}}',
+    name: '名称',
+    namePlaceholder: '例如：我的助手',
+    emoji: '表情',
+    emojiPlaceholder: '例如：🤖',
   },
   chat: {
     selectAgent: '选择智能体',
@@ -114,6 +121,9 @@ export default {
   },
   header: {
     gateway: '网关：{{status}}',
+  },
+  statusBar: {
+    protocol: '协议 v3',
   },
   status: {
     connected: '已连接',

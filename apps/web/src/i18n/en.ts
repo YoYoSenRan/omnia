@@ -31,10 +31,17 @@ export default {
     title: 'Agents',
     subtitle: 'Manage your OpenClaw agents',
     newAgent: 'New Agent',
+    editAgent: 'Edit Agent',
+    deleteAgent: 'Delete Agent',
+    deleteConfirm: 'Are you sure you want to delete agent "{{name}}"? This action cannot be undone.',
     loadError: 'Failed to load agents. Make sure the Gateway is connected.',
     empty: 'No agents yet',
     emptyDesc: 'Create your first agent to get started',
     model: 'Model: {{model}}',
+    name: 'Name',
+    namePlaceholder: 'e.g. My Assistant',
+    emoji: 'Emoji',
+    emojiPlaceholder: 'e.g. 🤖',
   },
   chat: {
     selectAgent: 'Select Agent',
@@ -114,6 +121,9 @@ export default {
   },
   header: {
     gateway: 'Gateway: {{status}}',
+  },
+  statusBar: {
+    protocol: 'Protocol v3',
   },
   status: {
     connected: 'Connected',

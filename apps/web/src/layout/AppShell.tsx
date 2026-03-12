@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
+import { StatusBar } from './StatusBar'
 import { PageTransition } from './PageTransition'
 import { useSSE } from '@/hooks/useSSE'
 
@@ -21,6 +22,7 @@ export function AppShell() {
             </PageTransition>
           </AnimatePresence>
         </main>
+        <StatusBar />
       </div>
     </div>
   )
