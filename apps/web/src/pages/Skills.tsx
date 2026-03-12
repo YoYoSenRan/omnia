@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { Card, CardContent } from '@/components/ui/card'
@@ -16,6 +17,7 @@ import { staggerContainer, staggerItem, cardHover } from '@/lib/motion'
 import type { Skill } from '@omnia/types'
 
 export function Skills() {
+  const { t } = useTranslation()
   const { data: skills, isLoading, error } = useQuery({
     queryKey: ['skills'],
     queryFn: () => api.get<Skill[]>('/api/skills'),
@@ -25,14 +27,14 @@ export function Skills() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Skills</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('skills.title')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Browse and manage installed skills
+            {t('skills.subtitle')}
           </p>
         </div>
         <Button>
           <Download data-icon="inline-start" />
-          Install Skill
+          {t('skills.install')}
         </Button>
       </div>
 
@@ -46,7 +48,7 @@ export function Skills() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <Card className="border-destructive/30 bg-destructive/5">
             <CardContent className="pt-6">
-              <p className="text-sm text-destructive">Failed to load skills.</p>
+              <p className="text-sm text-destructive">{t('skills.loadError')}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -59,7 +61,7 @@ export function Skills() {
           animate={{ opacity: 1, scale: 1 }}
         >
           <Puzzle size={40} className="text-muted-foreground" strokeWidth={1.2} />
-          <p className="mt-4 text-sm text-muted-foreground">No skills installed</p>
+          <p className="mt-4 text-sm text-muted-foreground">{t('skills.empty')}</p>
         </motion.div>
       )}
 
@@ -97,11 +99,11 @@ export function Skills() {
                         <DropdownMenuGroup>
                           <DropdownMenuItem>
                             <RefreshCw data-icon="inline-start" />
-                            Update
+                            {t('skills.update')}
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive">
                             <Trash2 data-icon="inline-start" />
-                            Remove
+                            {t('skills.remove')}
                           </DropdownMenuItem>
                         </DropdownMenuGroup>
                       </DropdownMenuContent>

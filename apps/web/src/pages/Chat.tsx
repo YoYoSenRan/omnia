@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { Card } from '@/components/ui/card'
@@ -12,6 +13,7 @@ import { Send, StopCircle, Bot, User } from 'lucide-react'
 import type { Agent, ChatMessage } from '@omnia/types'
 
 export function Chat() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
   const [input, setInput] = useState('')
@@ -66,7 +68,7 @@ export function Chat() {
         variants={{ animate: { transition: { staggerChildren: 0.03 } } }}
       >
         <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Select Agent
+          {t('chat.selectAgent')}
         </p>
         {agents?.map((agent) => (
           <motion.button
@@ -91,7 +93,7 @@ export function Chat() {
           </motion.button>
         ))}
         {(!agents || agents.length === 0) && (
-          <p className="px-3 text-xs text-muted-foreground">No agents available</p>
+          <p className="px-3 text-xs text-muted-foreground">{t('chat.noAgents')}</p>
         )}
       </motion.div>
 
@@ -107,7 +109,7 @@ export function Chat() {
               exit={{ opacity: 0 }}
             >
               <p className="text-sm text-muted-foreground">
-                Select an agent to start chatting
+                {t('chat.selectToStart')}
               </p>
             </motion.div>
           ) : (
@@ -126,7 +128,7 @@ export function Chat() {
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium text-foreground">
-                  {selectedAgentData?.name ?? 'Agent'}
+                  {selectedAgentData?.name ?? t('chat.agent')}
                 </span>
               </div>
 
@@ -137,7 +139,7 @@ export function Chat() {
                     <div className="flex flex-col items-center justify-center pt-20">
                       <Bot size={32} className="text-muted-foreground" strokeWidth={1.2} />
                       <p className="mt-3 text-sm text-muted-foreground">
-                        Start a conversation
+                        {t('chat.startConversation')}
                       </p>
                     </div>
                   )}
@@ -188,7 +190,7 @@ export function Chat() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                    placeholder="Type a message..."
+                    placeholder={t('chat.placeholder')}
                   />
                   {sendMutation.isPending ? (
                     <Button

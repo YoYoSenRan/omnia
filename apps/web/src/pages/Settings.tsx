@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -46,6 +47,7 @@ function ConnectionForm({
   onCancel: () => void
   loading: boolean
 }) {
+  const { t } = useTranslation()
   const [name, setName] = useState(initial?.name ?? '')
   const [gatewayUrl, setGatewayUrl] = useState(initial?.gatewayUrl ?? 'ws://localhost:18789')
   const [token, setToken] = useState(initial?.token ?? '')
@@ -59,16 +61,16 @@ function ConnectionForm({
       className="flex flex-col gap-4"
     >
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-foreground">Name</label>
+        <label className="text-sm font-medium text-foreground">{t('settings.name')}</label>
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Local Dev"
+          placeholder={t('settings.namePlaceholder')}
           required
         />
       </div>
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-foreground">Gateway URL</label>
+        <label className="text-sm font-medium text-foreground">{t('settings.gatewayUrl')}</label>
         <Input
           value={gatewayUrl}
           onChange={(e) => setGatewayUrl(e.target.value)}
@@ -77,20 +79,20 @@ function ConnectionForm({
         />
       </div>
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-foreground">Token</label>
+        <label className="text-sm font-medium text-foreground">{t('settings.token')}</label>
         <Input
           type="password"
           value={token}
           onChange={(e) => setToken(e.target.value)}
-          placeholder="Optional"
+          placeholder={t('settings.optional')}
         />
       </div>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" disabled={loading}>
-          {loading ? 'Saving...' : 'Save'}
+          {loading ? t('common.saving') : t('common.save')}
         </Button>
       </DialogFooter>
     </form>
@@ -98,6 +100,7 @@ function ConnectionForm({
 }
 
 export function Settings() {
+  const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<ConnectionWithStatus | null>(null)
@@ -157,14 +160,14 @@ export function Settings() {
     >
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('settings.title')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage gateway connections and system configuration
+            {t('settings.subtitle')}
           </p>
         </div>
         <Button onClick={() => setDialogOpen(true)} size="sm">
           <Plus className="mr-1.5 h-4 w-4" />
-          Add Connection
+          {t('settings.addConnection')}
         </Button>
       </div>
 
@@ -173,7 +176,7 @@ export function Settings() {
         {connections.length === 0 && (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No connections configured. Add one to get started.
+              {t('settings.noConnections')}
             </CardContent>
           </Card>
         )}
@@ -187,10 +190,10 @@ export function Settings() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground">{conn.name}</span>
                   {conn.isActive && (
-                    <Badge variant="default" className="text-[10px]">Active</Badge>
+                    <Badge variant="default" className="text-[10px]">{t('settings.active')}</Badge>
                   )}
                   <Badge variant={statusVariant[conn.status] ?? 'outline'}>
-                    {conn.status}
+                    {t(`status.${conn.status}`, conn.status)}
                   </Badge>
                 </div>
                 <span className="text-xs text-muted-foreground">{conn.gatewayUrl}</span>
@@ -205,7 +208,7 @@ export function Settings() {
                     disabled={connectMutation.isPending}
                   >
                     <Power className="mr-1 h-3.5 w-3.5" />
-                    Connect
+                    {t('common.connect')}
                   </Button>
                 ) : conn.status === 'connected' ? (
                   <>
@@ -217,7 +220,7 @@ export function Settings() {
                         disabled={activateMutation.isPending}
                       >
                         <Star className="mr-1 h-3.5 w-3.5" />
-                        Activate
+                        {t('common.activate')}
                       </Button>
                     )}
                     <Button
@@ -227,7 +230,7 @@ export function Settings() {
                       disabled={disconnectMutation.isPending}
                     >
                       <PowerOff className="mr-1 h-3.5 w-3.5" />
-                      Disconnect
+                      {t('common.disconnect')}
                     </Button>
                   </>
                 ) : null}
@@ -241,14 +244,14 @@ export function Settings() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setEditing(conn)}>
                       <Pencil className="mr-2 h-3.5 w-3.5" />
-                      Edit
+                      {t('common.edit')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => deleteMutation.mutate(conn.id)}
                       className="text-destructive"
                     >
                       <Trash2 className="mr-2 h-3.5 w-3.5" />
-                      Delete
+                      {t('common.delete')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -258,26 +261,55 @@ export function Settings() {
         ))}
       </motion.div>
 
+      {/* Language */}
+      <motion.div variants={staggerItem}>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('settings.language')}</CardTitle>
+          </CardHeader>
+          <Separator />
+          <CardContent className="pt-6">
+            <p className="mb-4 text-sm text-muted-foreground">{t('settings.languageDesc')}</p>
+            <div className="flex gap-2">
+              <Button
+                variant={i18n.language === 'en' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => i18n.changeLanguage('en')}
+              >
+                English
+              </Button>
+              <Button
+                variant={i18n.language === 'zh' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => i18n.changeLanguage('zh')}
+              >
+                中文
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* About */}
       <motion.div variants={staggerItem}>
         <Card>
           <CardHeader>
-            <CardTitle>About</CardTitle>
+            <CardTitle>{t('settings.about')}</CardTitle>
           </CardHeader>
           <Separator />
           <CardContent className="pt-6">
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Version</span>
+                <span className="text-sm text-muted-foreground">{t('settings.version')}</span>
                 <span className="text-sm text-foreground">0.0.1</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Platform</span>
-                <span className="text-sm text-foreground">OpenClaw Web Console</span>
+                <span className="text-sm text-muted-foreground">{t('settings.platform')}</span>
+                <span className="text-sm text-foreground">{t('settings.platformValue')}</span>
               </div>
               {status && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Server Uptime</span>
+                  <span className="text-sm text-muted-foreground">{t('settings.serverUptime')}</span>
                   <span className="text-sm text-foreground">
                     {Math.floor(status.uptime)}s
                   </span>
@@ -292,7 +324,7 @@ export function Settings() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Connection</DialogTitle>
+            <DialogTitle>{t('settings.addConnection')}</DialogTitle>
           </DialogHeader>
           <ConnectionForm
             onSubmit={(data) => createMutation.mutate(data)}
@@ -306,7 +338,7 @@ export function Settings() {
       <Dialog open={!!editing} onOpenChange={(open) => { if (!open) setEditing(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Connection</DialogTitle>
+            <DialogTitle>{t('settings.editConnection')}</DialogTitle>
           </DialogHeader>
           {editing && (
             <ConnectionForm

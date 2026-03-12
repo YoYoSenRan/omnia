@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,16 +11,8 @@ import { useState } from 'react'
 
 type WorkspaceFiles = Record<string, string | null>
 
-const FILE_DESCRIPTIONS: Record<string, string> = {
-  'AGENTS.md': 'Agent definitions and configurations',
-  'SOUL.md': 'Core personality and behavior directives',
-  'USER.md': 'User preferences and context',
-  'IDENTITY.md': 'Agent identity and introduction',
-  'TOOLS.md': 'Tool configurations and permissions',
-  'MEMORY.md': 'Accumulated knowledge and memory',
-}
-
 export function Workspace() {
+  const { t } = useTranslation()
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
 
   const { data: files, isLoading, error } = useQuery({
@@ -33,9 +26,9 @@ export function Workspace() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">Workspace</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{t('workspace.title')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          View and manage OpenClaw workspace files
+          {t('workspace.subtitle')}
         </p>
       </div>
 
@@ -49,7 +42,7 @@ export function Workspace() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <Card className="border-destructive/30 bg-destructive/5">
             <CardContent className="pt-6">
-              <p className="text-sm text-destructive">Failed to load workspace files.</p>
+              <p className="text-sm text-destructive">{t('workspace.loadError')}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -83,7 +76,7 @@ export function Workspace() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{name}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {files[name] === null ? 'Not found' : FILE_DESCRIPTIONS[name] ?? ''}
+                    {files[name] === null ? t('common.notFound') : t(`workspace.files.${name}`, '')}
                   </p>
                 </div>
               </motion.button>
@@ -103,7 +96,7 @@ export function Workspace() {
                 >
                   <FolderOpen size={40} className="text-muted-foreground" strokeWidth={1.2} />
                   <p className="mt-4 text-sm text-muted-foreground">
-                    Select a file to view its contents
+                    {t('workspace.selectFile')}
                   </p>
                 </motion.div>
               )}
@@ -115,7 +108,7 @@ export function Workspace() {
                   exit={{ opacity: 0 }}
                 >
                   <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">File not found in workspace</p>
+                    <p className="text-sm text-muted-foreground">{t('workspace.fileNotFound')}</p>
                   </CardContent>
                 </motion.div>
               )}

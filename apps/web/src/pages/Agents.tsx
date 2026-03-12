@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,6 +24,7 @@ const statusBadge: Record<string, string> = {
 }
 
 export function Agents() {
+  const { t } = useTranslation()
   const { data: agents, isLoading, error } = useQuery({
     queryKey: ['agents'],
     queryFn: () => api.get<Agent[]>('/api/agents'),
@@ -32,14 +34,14 @@ export function Agents() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Agents</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('agents.title')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage your OpenClaw agents
+            {t('agents.subtitle')}
           </p>
         </div>
         <Button>
           <Plus data-icon="inline-start" />
-          New Agent
+          {t('agents.newAgent')}
         </Button>
       </div>
 
@@ -54,7 +56,7 @@ export function Agents() {
           <Card className="border-destructive/30 bg-destructive/5">
             <CardContent className="pt-6">
               <p className="text-sm text-destructive">
-                Failed to load agents. Make sure the Gateway is connected.
+                {t('agents.loadError')}
               </p>
             </CardContent>
           </Card>
@@ -68,9 +70,9 @@ export function Agents() {
           animate={{ opacity: 1, scale: 1 }}
         >
           <Bot size={40} className="text-muted-foreground" strokeWidth={1.2} />
-          <p className="mt-4 text-sm text-muted-foreground">No agents yet</p>
+          <p className="mt-4 text-sm text-muted-foreground">{t('agents.empty')}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Create your first agent to get started
+            {t('agents.emptyDesc')}
           </p>
         </motion.div>
       )}
@@ -114,11 +116,11 @@ export function Agents() {
                         <DropdownMenuGroup>
                           <DropdownMenuItem>
                             <Pencil data-icon="inline-start" />
-                            Edit
+                            {t('common.edit')}
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive">
                             <Trash2 data-icon="inline-start" />
-                            Delete
+                            {t('common.delete')}
                           </DropdownMenuItem>
                         </DropdownMenuGroup>
                       </DropdownMenuContent>
@@ -126,7 +128,7 @@ export function Agents() {
                   </div>
                   {agent.model && (
                     <p className="mt-3 text-xs text-muted-foreground">
-                      Model: {agent.model}
+                      {t('agents.model', { model: agent.model })}
                     </p>
                   )}
                 </CardContent>
