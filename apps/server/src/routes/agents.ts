@@ -1,31 +1,19 @@
 import { Hono } from 'hono'
-import type { OpenClawAdapter } from '../adapter'
+import type { AdapterManager } from '../adapter'
 
-export function agentRoutes(adapter: OpenClawAdapter) {
+export function agentRoutes(manager: AdapterManager) {
   const app = new Hono()
 
-  app.get('/', async (c) => {
-    const agents = await adapter.listAgents()
-    return c.json(agents)
-  })
-
-  app.post('/', async (c) => {
-    const body = await c.req.json()
-    const agent = await adapter.createAgent(body)
-    return c.json(agent, 201)
-  })
-
-  app.put('/:id', async (c) => {
-    const id = c.req.param('id')
-    const body = await c.req.json()
-    const agent = await adapter.updateAgent(id, body)
-    return c.json(agent)
-  })
-
-  app.delete('/:id', async (c) => {
-    const id = c.req.param('id')
-    await adapter.deleteAgent(id)
-    return c.json({ ok: true })
+  // Send an agent message (triggers an agent run)
+  app.post('/run', async (c) => {
+    const body = await c.req.json<{
+      agent?: string
+      sessionId?: string
+      to?: string
+      message: string
+    }>()
+    const result = await manager.getActive()!.sendAgentMessage(body)
+    return c.json(result)
   })
 
   return app

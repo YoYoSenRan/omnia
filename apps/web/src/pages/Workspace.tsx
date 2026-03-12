@@ -1,3 +1,4 @@
+import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -45,20 +46,31 @@ export function Workspace() {
       )}
 
       {error && (
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardContent className="pt-6">
-            <p className="text-sm text-destructive">Failed to load workspace files.</p>
-          </CardContent>
-        </Card>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="pt-6">
+              <p className="text-sm text-destructive">Failed to load workspace files.</p>
+            </CardContent>
+          </Card>
+        </motion.div>
       )}
 
       {files && (
         <div className="flex gap-4">
           {/* File list */}
-          <div className="flex w-64 flex-col gap-1">
+          <motion.div
+            className="flex w-64 flex-col gap-1"
+            initial="initial"
+            animate="animate"
+            variants={{ animate: { transition: { staggerChildren: 0.03 } } }}
+          >
             {fileNames.map((name) => (
-              <button
+              <motion.button
                 key={name}
+                variants={{
+                  initial: { opacity: 0, x: -12 },
+                  animate: { opacity: 1, x: 0 },
+                }}
                 onClick={() => setSelectedFile(name)}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors',
@@ -74,40 +86,61 @@ export function Workspace() {
                     {files[name] === null ? 'Not found' : FILE_DESCRIPTIONS[name] ?? ''}
                   </p>
                 </div>
-              </button>
+              </motion.button>
             ))}
-          </div>
+          </motion.div>
 
           {/* Content viewer */}
           <Card className="flex-1">
-            {!selectedFile && (
-              <div className="flex flex-col items-center justify-center py-20">
-                <FolderOpen size={40} className="text-muted-foreground" strokeWidth={1.2} />
-                <p className="mt-4 text-sm text-muted-foreground">
-                  Select a file to view its contents
-                </p>
-              </div>
-            )}
-            {selectedFile && activeContent === null && (
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">File not found in workspace</p>
-              </CardContent>
-            )}
-            {selectedFile && activeContent !== null && activeContent !== undefined && (
-              <>
-                <CardHeader>
-                  <CardTitle className="text-sm">{selectedFile}</CardTitle>
-                </CardHeader>
-                <Separator />
-                <CardContent className="pt-4">
-                  <ScrollArea className="h-[calc(100vh-20rem)]">
-                    <pre className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
-                      {activeContent}
-                    </pre>
-                  </ScrollArea>
-                </CardContent>
-              </>
-            )}
+            <AnimatePresence mode="wait">
+              {!selectedFile && (
+                <motion.div
+                  key="empty"
+                  className="flex flex-col items-center justify-center py-20"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <FolderOpen size={40} className="text-muted-foreground" strokeWidth={1.2} />
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    Select a file to view its contents
+                  </p>
+                </motion.div>
+              )}
+              {selectedFile && activeContent === null && (
+                <motion.div
+                  key="not-found"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-muted-foreground">File not found in workspace</p>
+                  </CardContent>
+                </motion.div>
+              )}
+              {selectedFile && activeContent !== null && activeContent !== undefined && (
+                <motion.div
+                  key={selectedFile}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <CardHeader>
+                    <CardTitle className="text-sm">{selectedFile}</CardTitle>
+                  </CardHeader>
+                  <Separator />
+                  <CardContent className="pt-4">
+                    <ScrollArea className="h-[calc(100vh-20rem)]">
+                      <pre className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
+                        {activeContent}
+                      </pre>
+                    </ScrollArea>
+                  </CardContent>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Card>
         </div>
       )}

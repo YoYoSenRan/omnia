@@ -1,11 +1,11 @@
 import { Hono } from 'hono'
-import type { OpenClawAdapter } from '../adapter'
+import type { AdapterManager } from '../adapter'
 
-export function modelRoutes(adapter: OpenClawAdapter) {
+export function modelRoutes(manager: AdapterManager) {
   const app = new Hono()
 
   app.get('/', async (c) => {
-    const models = await adapter.listModels()
+    const models = await manager.getActive()!.listModels()
     return c.json(models)
   })
 

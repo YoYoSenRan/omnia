@@ -1,24 +1,13 @@
 import { Hono } from 'hono'
-import type { OpenClawAdapter } from '../adapter'
+import type { AdapterManager } from '../adapter'
 
-export function sessionRoutes(adapter: OpenClawAdapter) {
+export function sessionRoutes(manager: AdapterManager) {
   const app = new Hono()
 
+  // Sessions are managed through the status/health endpoints for now
   app.get('/', async (c) => {
-    const sessions = await adapter.listSessions()
-    return c.json(sessions)
-  })
-
-  app.post('/:id/reset', async (c) => {
-    const id = c.req.param('id')
-    const result = await adapter.resetSession(id)
-    return c.json(result)
-  })
-
-  app.post('/:id/compact', async (c) => {
-    const id = c.req.param('id')
-    const result = await adapter.compactSession(id)
-    return c.json(result)
+    const status = await manager.getActive()!.getStatus_()
+    return c.json(status)
   })
 
   return app

@@ -1,9 +1,22 @@
 import WebSocket from 'ws'
 import { EventEmitter } from 'node:events'
 import pino from 'pino'
-import type { ConnectionStatus, GatewayFrame, GatewayResponse, OmniaEvent } from '@omnia/types'
-import { createRequest, parseFrame, isResponse, isEvent } from './protocol'
-import { normalizeEvent } from './events'
+import type {
+  ConnectionStatus,
+  GatewayFrame,
+  GatewayResponse,
+  HelloOkPayload,
+  OmniaEvent,
+} from '@omnia/types'
+import {
+  createRequest,
+  buildConnectParams,
+  parseFrame,
+  isResponse,
+  isEvent,
+  isConnectChallenge,
+} from './protocol'
+import { normalizeEvent, isInternalEvent } from './events'
 
 const logger = pino({ name: 'adapter' })
 
@@ -25,7 +38,9 @@ export class OpenClawAdapter extends EventEmitter {
   private pending = new Map<string, PendingRequest>()
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private reconnectDelay = 1000
-  private heartbeatTimer: ReturnType<typeof setInterval> | null = null
+  private tickTimer: ReturnType<typeof setInterval> | null = null
+  private tickIntervalMs = 15000
+  private connectRequestId: string | null = null
 
   constructor(options: AdapterOptions) {
     super()
@@ -48,18 +63,21 @@ export class OpenClawAdapter extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       const ws = new WebSocket(this.options.gatewayUrl)
+      let settled = false
+
+      const settle = (fn: typeof resolve | typeof reject, val?: unknown) => {
+        if (settled) return
+        settled = true
+        ;(fn as (v?: unknown) => void)(val)
+      }
 
       ws.on('open', () => {
         this.ws = ws
-        this.setStatus('authenticating')
         this.reconnectDelay = 1000
-        // Send connect handshake
-        ws.send(JSON.stringify(createRequest('connect', {
-          role: 'operator',
-          scopes: ['operator.read', 'operator.write', 'operator.admin', 'operator.approvals'],
-          device: { id: 'omnia-server', name: 'Omnia' },
-          ...(this.options.token ? { token: this.options.token } : {}),
-        })))
+        // Wait for connect.challenge event from Gateway
+        // Some gateways may not send a challenge (e.g. --dev mode),
+        // so we also handle the case where we need to send connect immediately
+        logger.info('WebSocket open, waiting for challenge...')
       })
 
       ws.on('message', (data) => {
@@ -68,43 +86,84 @@ export class OpenClawAdapter extends EventEmitter {
         try {
           frame = parseFrame(raw)
         } catch {
-          logger.warn({ raw }, 'Failed to parse frame')
+          logger.warn({ raw: raw.slice(0, 200) }, 'Failed to parse frame')
           return
         }
 
+        // Phase 1: Handle connect.challenge → send connect request
+        if (isConnectChallenge(frame)) {
+          logger.info('Received connect.challenge, sending connect...')
+          this.setStatus('authenticating')
+          const params = buildConnectParams(this.options.token)
+          const req = createRequest('connect', params)
+          this.connectRequestId = req.id
+          ws.send(JSON.stringify(req))
+          return
+        }
+
+        // Phase 2: Handle connect response (hello-ok)
+        if (isResponse(frame) && frame.id === this.connectRequestId) {
+          this.connectRequestId = null
+          if (frame.ok) {
+            const payload = frame.payload as HelloOkPayload | undefined
+            if (payload?.policy?.tickIntervalMs) {
+              this.tickIntervalMs = payload.policy.tickIntervalMs
+            }
+            this.setStatus('connected')
+            this.startTick()
+            logger.info(
+              { protocol: payload?.protocol, tickMs: this.tickIntervalMs },
+              'Connected to Gateway'
+            )
+            settle(resolve)
+          } else {
+            const errMsg = frame.error?.message ?? 'Authentication failed'
+            logger.error({ error: frame.error }, 'Connect rejected')
+            settle(reject, new Error(errMsg))
+            ws.close()
+          }
+          return
+        }
+
+        // Phase 3: Normal operation — route responses and events
         if (isResponse(frame)) {
           this.handleResponse(frame)
-
-          // First successful response after connect = authenticated
-          if (this.status === 'authenticating' && frame.ok) {
-            this.setStatus('connected')
-            this.startHeartbeat()
-            logger.info('Connected to Gateway')
-            resolve()
-          }
         } else if (isEvent(frame)) {
-          const event = normalizeEvent(frame)
-          this.emit('event', event)
+          if (!isInternalEvent(frame.event)) {
+            const event = normalizeEvent(frame)
+            this.emit('event', event)
+          }
         }
       })
 
-      ws.on('close', () => {
+      ws.on('close', (code, reason) => {
+        const wasConnected = this.status === 'connected'
         this.cleanup()
         this.setStatus('disconnected')
-        logger.warn('Gateway connection closed')
+        logger.warn({ code, reason: reason.toString() }, 'Gateway connection closed')
         this.scheduleReconnect()
-        // Only reject if we never connected
-        if (this.status !== 'connected') {
-          reject(new Error('Connection closed before authentication'))
+        if (!wasConnected) {
+          settle(reject, new Error(`Connection closed (code ${code})`))
         }
       })
 
       ws.on('error', (err) => {
-        logger.error({ err }, 'WebSocket error')
-        if (this.status !== 'connected') {
-          reject(err)
-        }
+        logger.error({ err: err.message }, 'WebSocket error')
+        settle(reject, err)
       })
+
+      // Fallback: if no challenge arrives within 5s, send connect anyway
+      // This handles gateways in --dev or --allow-unconfigured mode
+      setTimeout(() => {
+        if (this.status === 'connecting' && this.ws === ws) {
+          logger.info('No challenge received, sending connect without challenge...')
+          this.setStatus('authenticating')
+          const params = buildConnectParams(this.options.token)
+          const req = createRequest('connect', params)
+          this.connectRequestId = req.id
+          ws.send(JSON.stringify(req))
+        }
+      }, 5000)
     })
   }
 
@@ -135,46 +194,18 @@ export class OpenClawAdapter extends EventEmitter {
     })
   }
 
-  // Convenience methods
+  // Convenience methods — aligned with real Gateway RPC
 
-  async listAgents() {
-    return this.request('agents.list')
+  async getHealth() {
+    return this.request('health')
   }
 
-  async createAgent(config: unknown) {
-    return this.request('agents.create', config)
+  async getStatus_() {
+    return this.request('status')
   }
 
-  async updateAgent(id: string, config: unknown) {
-    return this.request('agents.update', { id, ...config as object })
-  }
-
-  async deleteAgent(id: string) {
-    return this.request('agents.delete', { id })
-  }
-
-  async sendMessage(agentId: string, message: string, sessionId?: string) {
-    return this.request('chat.send', { agentId, message, sessionId })
-  }
-
-  async abortChat(agentId: string) {
-    return this.request('chat.abort', { agentId })
-  }
-
-  async getChatHistory(sessionId: string) {
-    return this.request('chat.history', { sessionId })
-  }
-
-  async listSessions() {
-    return this.request('sessions.list')
-  }
-
-  async resetSession(sessionId: string) {
-    return this.request('sessions.reset', { sessionId })
-  }
-
-  async compactSession(sessionId: string) {
-    return this.request('sessions.compact', { sessionId })
+  async getPresence() {
+    return this.request('system-presence')
   }
 
   async getToolsCatalog() {
@@ -185,24 +216,28 @@ export class OpenClawAdapter extends EventEmitter {
     return this.request('models.list')
   }
 
-  async listCronJobs() {
-    return this.request('cron.list')
+  // Agent operations
+  async sendAgentMessage(params: {
+    agent?: string
+    sessionId?: string
+    to?: string
+    message: string
+  }) {
+    return this.request('agent', params)
   }
 
-  async addCronJob(config: unknown) {
-    return this.request('cron.add', config)
+  // Session / chat
+  async sendChat(params: { to: string; message: string; channel?: string }) {
+    return this.request('chat.send', params)
   }
 
-  async runCronJob(id: string) {
-    return this.request('cron.run', { id })
+  async getChatHistory(sessionId: string) {
+    return this.request('chat.history', { sessionId })
   }
 
-  async installSkill(url: string) {
-    return this.request('skills.install', { url })
-  }
-
-  async updateSkill(name: string) {
-    return this.request('skills.update', { name })
+  // Exec approvals
+  async resolveApproval(params: { runId: string; approved: boolean; reason?: string }) {
+    return this.request('exec.approval.resolve', params)
   }
 
   // Internal
@@ -226,20 +261,21 @@ export class OpenClawAdapter extends EventEmitter {
     this.emit('connectionChange', status)
   }
 
-  private startHeartbeat(): void {
-    this.heartbeatTimer = setInterval(() => {
+  private startTick(): void {
+    this.tickTimer = setInterval(() => {
       if (this.ws?.readyState === WebSocket.OPEN) {
         this.ws.ping()
       }
-    }, 30000)
+    }, this.tickIntervalMs)
   }
 
   private cleanup(): void {
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer)
-      this.heartbeatTimer = null
+    if (this.tickTimer) {
+      clearInterval(this.tickTimer)
+      this.tickTimer = null
     }
-    for (const [id, pending] of this.pending) {
+    this.connectRequestId = null
+    for (const [, pending] of this.pending) {
       clearTimeout(pending.timer)
       pending.reject(new Error('Connection closed'))
     }

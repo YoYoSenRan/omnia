@@ -1,17 +1,19 @@
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import type { OpenClawAdapter } from '../adapter'
+import type { AdapterManager } from '../adapter'
 import type { OmniaEvent } from '@omnia/types'
 
-export function sseRoutes(adapter: OpenClawAdapter) {
+export function sseRoutes(manager: AdapterManager) {
   const app = new Hono()
 
   app.get('/stream', (c) => {
     return streamSSE(c, async (stream) => {
+      const active = manager.getActive()
+
       // Send initial connection status
       await stream.writeSSE({
         event: 'connection',
-        data: JSON.stringify({ status: adapter.getStatus() }),
+        data: JSON.stringify({ status: active?.getStatus() ?? 'disconnected' }),
       })
 
       const eventHandler = (event: OmniaEvent) => {
@@ -21,19 +23,19 @@ export function sseRoutes(adapter: OpenClawAdapter) {
         })
       }
 
-      const statusHandler = (status: string) => {
+      const statusHandler = ({ status }: { connectionId: string; status: string }) => {
         stream.writeSSE({
           event: 'connection',
           data: JSON.stringify({ status }),
         })
       }
 
-      adapter.on('event', eventHandler)
-      adapter.on('connectionChange', statusHandler)
+      manager.on('event', eventHandler)
+      manager.on('connectionChange', statusHandler)
 
       stream.onAbort(() => {
-        adapter.off('event', eventHandler)
-        adapter.off('connectionChange', statusHandler)
+        manager.off('event', eventHandler)
+        manager.off('connectionChange', statusHandler)
       })
     })
   })
