@@ -9,8 +9,8 @@
 
 import pg from 'pg'
 import { drizzle } from 'drizzle-orm/node-postgres'
-import { DATABASE_URL } from '../lib/env.js'
-import { dbLogger } from '../lib/logger.js'
+import { DATABASE_URL } from '../utils/env.js'
+import { dbLogger } from '../utils/logger.js'
 import * as schema from './schema.js'
 
 const { Pool } = pg

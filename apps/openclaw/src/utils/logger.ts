@@ -8,7 +8,7 @@
  */
 
 import pino from 'pino'
-import { LOG_LEVEL, IS_DEV } from './env.js'
+import { LOG_LEVEL, IS_DEV } from '../utils/env.js'
 
 /** 根日志实例 */
 export const logger = pino({
@@ -25,9 +25,6 @@ export const gwLogger = logger.child({ module: 'gateway' })
 
 /** 同步模块日志 */
 export const syncLogger = logger.child({ module: 'sync' })
-
-/** 调度器模块日志 */
-export const schedulerLogger = logger.child({ module: 'scheduler' })
 
 /** 事件总线日志 */
 export const eventLogger = logger.child({ module: 'events' })

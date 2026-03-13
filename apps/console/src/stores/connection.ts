@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { create } from "zustand"
 
 interface ConnectionState {
   /** SSE 是否已连接 */

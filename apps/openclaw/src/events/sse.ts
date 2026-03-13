@@ -10,7 +10,7 @@
 import type { Context } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { eventBus } from './bus.js'
-import { eventLogger } from '../lib/logger.js'
+import { eventLogger } from '../utils/logger.js'
 
 /** 需要推送给 SSE 客户端的事件列表 */
 const SSE_EVENTS = [

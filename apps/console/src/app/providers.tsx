@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from "react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 /** TanStack Query 客户端实例 */
 const queryClient = new QueryClient({
@@ -7,7 +7,7 @@ const queryClient = new QueryClient({
     queries: {
       /* 4xx 错误不重试 */
       retry: (failureCount, error) => {
-        if (error instanceof Error && 'status' in error) {
+        if (error instanceof Error && "status" in error) {
           const status = (error as { status: number }).status
           if (status >= 400 && status < 500) return false
         }

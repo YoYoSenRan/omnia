@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
-import { request } from '@/lib/api'
-import { QUERY_KEYS, TASK_STATUS_MAP } from '@/lib/constants'
-import type { Task, TaskStatus } from '@/types'
+import { useQuery } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
+import { request } from "@/lib/api"
+import { QUERY_KEYS, TASK_STATUS_MAP } from "@/lib/constants"
+import type { Task, TaskStatus } from "@/types"
 
 /**
  * 看板列定义
@@ -19,19 +19,19 @@ const COLUMNS: {
   titleClass: string
 }[] = [
   {
-    titleKey: 'tasks.columnQueued',
-    statuses: ['pending', 'assigned'],
-    titleClass: 'text-foreground',
+    titleKey: "tasks.columnQueued",
+    statuses: ["pending", "assigned"],
+    titleClass: "text-foreground",
   },
   {
-    titleKey: 'tasks.columnInProgress',
-    statuses: ['running'],
-    titleClass: 'text-green-600',
+    titleKey: "tasks.columnInProgress",
+    statuses: ["running"],
+    titleClass: "text-green-600",
   },
   {
-    titleKey: 'tasks.columnDone',
-    statuses: ['completed', 'failed', 'cancelled'],
-    titleClass: 'text-muted-foreground',
+    titleKey: "tasks.columnDone",
+    statuses: ["completed", "failed", "cancelled"],
+    titleClass: "text-muted-foreground",
   },
 ]
 
@@ -42,11 +42,11 @@ const COLUMNS: {
  * @returns 格式化后的本地时间，如 "Mar 13, 09:41"
  */
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   })
 }
 
@@ -75,9 +75,7 @@ function TaskCard({ task }: TaskCardProps) {
     <div className="rounded-lg border border-border bg-card px-4 py-3 shadow-sm">
       {/* 标题行：任务名 + 状态标签 */}
       <div className="flex items-start justify-between gap-2">
-        <p className="flex-1 text-sm font-medium text-foreground leading-snug">
-          {task.title}
-        </p>
+        <p className="flex-1 text-sm font-medium text-foreground leading-snug">{task.title}</p>
         {/* 状态标签 */}
         <span className={`shrink-0 text-xs font-medium ${statusConfig.color}`}>
           {t(`tasks.status${task.status.charAt(0).toUpperCase()}${task.status.slice(1)}`)}
@@ -85,16 +83,10 @@ function TaskCard({ task }: TaskCardProps) {
       </div>
 
       {/* 负责人：仅当 assignedTo 有值时才渲染 */}
-      {task.assignedTo && (
-        <p className="mt-1.5 text-xs text-muted-foreground truncate">
-          {t('tasks.assignedTo', { agent: task.assignedTo })}
-        </p>
-      )}
+      {task.assignedTo && <p className="mt-1.5 text-xs text-muted-foreground truncate">{t("tasks.assignedTo", { agent: task.assignedTo })}</p>}
 
       {/* 创建时间 */}
-      <p className="mt-1 text-xs text-muted-foreground">
-        {formatDate(task.createdAt)}
-      </p>
+      <p className="mt-1 text-xs text-muted-foreground">{formatDate(task.createdAt)}</p>
     </div>
   )
 }
@@ -127,16 +119,14 @@ function KanbanColumn({ title, titleClass, tasks }: KanbanColumnProps) {
       <div className="flex items-center gap-2">
         <h3 className={`text-sm font-semibold ${titleClass}`}>{title}</h3>
         {/* 任务数量徽标 */}
-        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-          {tasks.length}
-        </span>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{tasks.length}</span>
       </div>
 
       {/* 卡片列表 */}
       {tasks.length === 0 ? (
         /* 空状态：该列无任务 */
         <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center">
-          <p className="text-xs text-muted-foreground">{t('tasks.columnEmpty')}</p>
+          <p className="text-xs text-muted-foreground">{t("tasks.columnEmpty")}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -161,31 +151,36 @@ function KanbanColumn({ title, titleClass, tasks }: KanbanColumnProps) {
 export function Tasks() {
   const { t } = useTranslation()
   // 拉取任务列表，结果缓存在 QUERY_KEYS.tasks 下
-  const { data: tasks, isLoading, isError, error } = useQuery<Task[]>({
+  const {
+    data: tasks,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<Task[]>({
     queryKey: QUERY_KEYS.tasks,
-    queryFn: () => request<Task[]>('/api/tasks'),
+    queryFn: () => request<Task[]>("/api/tasks"),
   })
 
   if (isLoading) {
     return (
       <div>
-        <h2 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h2>
-        <p className="mt-2 text-muted-foreground">{t('tasks.subtitle')}</p>
-        <p className="mt-8 text-sm text-muted-foreground">{t('common.loading')}</p>
+        <h2 className="text-2xl font-bold text-foreground">{t("tasks.title")}</h2>
+        <p className="mt-2 text-muted-foreground">{t("tasks.subtitle")}</p>
+        <p className="mt-8 text-sm text-muted-foreground">{t("common.loading")}</p>
       </div>
     )
   }
 
   if (isError) {
     /** 错误消息，优先取 Error.message */
-    const errorMessage = error instanceof Error ? error.message : t('common.unknownError')
+    const errorMessage = error instanceof Error ? error.message : t("common.unknownError")
 
     return (
       <div>
-        <h2 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h2>
-        <p className="mt-2 text-muted-foreground">{t('tasks.subtitle')}</p>
+        <h2 className="text-2xl font-bold text-foreground">{t("tasks.title")}</h2>
+        <p className="mt-2 text-muted-foreground">{t("tasks.subtitle")}</p>
         <div className="mt-8 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
-          <p className="text-sm font-medium text-destructive">{t('common.loadFailed')}</p>
+          <p className="text-sm font-medium text-destructive">{t("common.loadFailed")}</p>
           <p className="mt-1 text-xs text-destructive/80">{errorMessage}</p>
         </div>
       </div>
@@ -198,11 +193,11 @@ export function Tasks() {
   if (taskList.length === 0) {
     return (
       <div>
-        <h2 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h2>
-        <p className="mt-2 text-muted-foreground">{t('tasks.subtitle')}</p>
+        <h2 className="text-2xl font-bold text-foreground">{t("tasks.title")}</h2>
+        <p className="mt-2 text-muted-foreground">{t("tasks.subtitle")}</p>
         <div className="mt-8 rounded-lg border border-dashed border-border px-6 py-12 text-center">
-          <p className="text-sm font-medium text-foreground">{t('tasks.empty')}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{t('tasks.emptyHint')}</p>
+          <p className="text-sm font-medium text-foreground">{t("tasks.empty")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("tasks.emptyHint")}</p>
         </div>
       </div>
     )
@@ -211,8 +206,8 @@ export function Tasks() {
   return (
     <div>
       {/* 页面头部：标题 + 描述 */}
-      <h2 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h2>
-      <p className="mt-2 text-muted-foreground">{t('tasks.subtitle')}</p>
+      <h2 className="text-2xl font-bold text-foreground">{t("tasks.title")}</h2>
+      <p className="mt-2 text-muted-foreground">{t("tasks.subtitle")}</p>
 
       {/* 看板区域：三列等宽分栏，间距 gap-4 */}
       <div className="mt-6 grid grid-cols-3 gap-4">
@@ -224,14 +219,7 @@ export function Tasks() {
           const statusSet = new Set<TaskStatus>(col.statuses)
           const colTasks = taskList.filter((task) => statusSet.has(task.status))
 
-          return (
-            <KanbanColumn
-              key={col.titleKey}
-              title={t(col.titleKey)}
-              titleClass={col.titleClass}
-              tasks={colTasks}
-            />
-          )
+          return <KanbanColumn key={col.titleKey} title={t(col.titleKey)} titleClass={col.titleClass} tasks={colTasks} />
         })}
       </div>
     </div>

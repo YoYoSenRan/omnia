@@ -1,8 +1,8 @@
 /** API 基础地址 */
-const API_BASE = import.meta.env.VITE_API_BASE ?? ''
+const API_BASE = import.meta.env.VITE_API_BASE ?? ""
 
 /** API Key（从环境变量读取，开发环境默认值） */
-const API_KEY = import.meta.env.VITE_API_KEY ?? 'dev-api-key'
+const API_KEY = import.meta.env.VITE_API_KEY ?? "dev-api-key"
 
 /**
  * API 错误类
@@ -17,7 +17,7 @@ export class ApiError extends Error {
 
   constructor(status: number, code: number, message: string) {
     super(message)
-    this.name = 'ApiError'
+    this.name = "ApiError"
     this.status = status
     this.code = code
   }
@@ -50,7 +50,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${API_KEY}`,
       ...init?.headers,
     },

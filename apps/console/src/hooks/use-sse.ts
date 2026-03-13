@@ -1,16 +1,16 @@
-import { useEffect, useRef } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { useConnectionStore } from '@/stores/connection'
-import { QUERY_KEYS } from '@/lib/constants'
+import { useEffect, useRef } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { useConnectionStore } from "@/stores/connection"
+import { QUERY_KEYS } from "@/lib/constants"
 
 /** SSE 事件名 → 需要刷新的 Query Key 映射 */
 const EVENT_INVALIDATION_MAP: Record<string, readonly (readonly string[])[]> = {
-  'agent.synced': [QUERY_KEYS.agents],
-  'agent.status': [QUERY_KEYS.agents],
-  'task.created': [QUERY_KEYS.tasks],
-  'task.updated': [QUERY_KEYS.tasks],
-  'task.completed': [QUERY_KEYS.tasks],
-  'session.created': [QUERY_KEYS.sessions],
+  "agent.synced": [QUERY_KEYS.agents],
+  "agent.status": [QUERY_KEYS.agents],
+  "task.created": [QUERY_KEYS.tasks],
+  "task.updated": [QUERY_KEYS.tasks],
+  "task.completed": [QUERY_KEYS.tasks],
+  "session.created": [QUERY_KEYS.sessions],
 }
 
 /**
@@ -29,9 +29,9 @@ export function useSSE() {
     let es: EventSource | null = null
 
     function connect() {
-      es = new EventSource('/api/events/stream')
+      es = new EventSource("/api/events/stream")
 
-      es.addEventListener('connected', () => {
+      es.addEventListener("connected", () => {
         setSseConnected(true)
       })
 

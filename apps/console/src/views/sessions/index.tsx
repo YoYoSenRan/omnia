@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
-import { request } from '@/lib/api'
-import { QUERY_KEYS } from '@/lib/constants'
-import type { Session, SessionStatus } from '@/types'
+import { useQuery } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
+import { request } from "@/lib/api"
+import { QUERY_KEYS } from "@/lib/constants"
+import type { Session, SessionStatus } from "@/types"
 
 /**
  * 格式化 ISO 时间字符串为本地可读格式
@@ -11,7 +11,7 @@ import type { Session, SessionStatus } from '@/types'
  * @returns 格式化后的本地时间字符串，null 时返回 "—"
  */
 function formatDate(iso: string | null): string {
-  if (!iso) return '—' // 未关闭的 Session closedAt 为 null
+  if (!iso) return "—" // 未关闭的 Session closedAt 为 null
   return new Date(iso).toLocaleString()
 }
 
@@ -45,24 +45,19 @@ function SessionStatusBadge({ status }: SessionStatusBadgeProps) {
   const { t } = useTranslation()
   /** open 状态用绿色，closed 状态用灰色 */
   const dotClass =
-    status === 'open'
-      ? 'bg-green-500' // 活跃会话
-      : 'bg-gray-400'  // 已关闭会话
+    status === "open"
+      ? "bg-green-500" // 活跃会话
+      : "bg-gray-400" // 已关闭会话
 
   /** 状态文字颜色与圆点保持一致 */
-  const textClass =
-    status === 'open'
-      ? 'text-green-600 dark:text-green-400'
-      : 'text-muted-foreground'
+  const textClass = status === "open" ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
 
   return (
     <span className="inline-flex items-center gap-1.5">
       {/* 状态指示圆点 */}
       <span className={`h-2 w-2 rounded-full ${dotClass}`} aria-hidden="true" />
       {/* 状态文字 */}
-      <span className={`text-xs font-medium capitalize ${textClass}`}>
-        {t(`sessions.status${status.charAt(0).toUpperCase()}${status.slice(1)}`)}
-      </span>
+      <span className={`text-xs font-medium capitalize ${textClass}`}>{t(`sessions.status${status.charAt(0).toUpperCase()}${status.slice(1)}`)}</span>
     </span>
   )
 }
@@ -116,11 +111,11 @@ function SessionListHeader() {
   const { t } = useTranslation()
   return (
     <div className="grid grid-cols-[1fr_1fr_100px_1fr_1fr] items-center gap-4 border-b border-border bg-muted/50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-      <span>{t('sessions.colId')}</span>
-      <span>{t('sessions.colAgentId')}</span>
-      <span>{t('sessions.colStatus')}</span>
-      <span>{t('sessions.colCreatedAt')}</span>
-      <span>{t('sessions.colClosedAt')}</span>
+      <span>{t("sessions.colId")}</span>
+      <span>{t("sessions.colAgentId")}</span>
+      <span>{t("sessions.colStatus")}</span>
+      <span>{t("sessions.colCreatedAt")}</span>
+      <span>{t("sessions.colClosedAt")}</span>
     </div>
   )
 }
@@ -138,21 +133,21 @@ export function Sessions() {
    * queryKey 来自常量，保持缓存 key 一致性
    */
   const {
-    data: sessions,   // 成功时的 Session 数组
-    isLoading,        // 首次加载中（无缓存数据）
-    isError,          // 请求失败
-    error,            // 错误对象
+    data: sessions, // 成功时的 Session 数组
+    isLoading, // 首次加载中（无缓存数据）
+    isError, // 请求失败
+    error, // 错误对象
   } = useQuery({
     queryKey: QUERY_KEYS.sessions,
-    queryFn: () => request<Session[]>('/api/sessions'),
+    queryFn: () => request<Session[]>("/api/sessions"),
   })
 
   return (
     <div className="space-y-6">
       {/* 页面标题区域 */}
       <div>
-        <h2 className="text-2xl font-bold text-foreground">{t('sessions.title')}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{t('sessions.subtitle')}</p>
+        <h2 className="text-2xl font-bold text-foreground">{t("sessions.title")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t("sessions.subtitle")}</p>
       </div>
 
       {/* 列表容器 */}
@@ -160,18 +155,16 @@ export function Sessions() {
         {/* ── 加载中状态 ── */}
         {isLoading && (
           <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-            <span>{t('common.loading')}</span>
+            <span>{t("common.loading")}</span>
           </div>
         )}
 
         {/* ── 错误状态 ── */}
         {isError && (
           <div className="flex flex-col items-center justify-center gap-1 py-16">
-            <p className="text-sm font-medium text-destructive">{t('common.loadFailed')}</p>
+            <p className="text-sm font-medium text-destructive">{t("common.loadFailed")}</p>
             {/* 展示具体错误信息，帮助排查问题 */}
-            <p className="text-xs text-muted-foreground">
-              {error instanceof Error ? error.message : t('common.unknownError')}
-            </p>
+            <p className="text-xs text-muted-foreground">{error instanceof Error ? error.message : t("common.unknownError")}</p>
           </div>
         )}
 
@@ -183,9 +176,7 @@ export function Sessions() {
 
             {/* ── 空状态 ── */}
             {sessions && sessions.length === 0 && (
-              <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-                {t('sessions.empty')}
-              </div>
+              <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">{t("sessions.empty")}</div>
             )}
 
             {/* ── 正常列表 ── */}

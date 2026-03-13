@@ -1,13 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { request } from '@/lib/api'
-import { QUERY_KEYS } from '@/lib/constants'
-import type { Agent } from '@/types'
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { request } from "@/lib/api"
+import { QUERY_KEYS } from "@/lib/constants"
+import type { Agent } from "@/types"
 
 /** 查询所有 Agent */
 export function useAgents() {
   return useQuery({
     queryKey: QUERY_KEYS.agents,
-    queryFn: () => request<Agent[]>('/api/agents'),
+    queryFn: () => request<Agent[]>("/api/agents"),
   })
 }
 
@@ -26,8 +26,8 @@ export function useCreateAgent() {
 
   return useMutation({
     mutationFn: (data: Partial<Agent>) =>
-      request<Agent>('/api/agents', {
-        method: 'POST',
+      request<Agent>("/api/agents", {
+        method: "POST",
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
@@ -43,7 +43,7 @@ export function useUpdateAgent(id: string) {
   return useMutation({
     mutationFn: (data: Partial<Agent>) =>
       request<Agent>(`/api/agents/${id}`, {
-        method: 'PUT',
+        method: "PUT",
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
@@ -58,8 +58,7 @@ export function useDeleteAgent() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) =>
-      request<{ id: string }>(`/api/agents/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => request<{ id: string }>(`/api/agents/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.agents })
     },

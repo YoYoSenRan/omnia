@@ -1,10 +1,10 @@
-import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
-import { useAgent } from '@/hooks/use-agents'
-import { request } from '@/lib/api'
-import { AGENT_STATUS_MAP, QUERY_KEYS } from '@/lib/constants'
-import type { AuditLog } from '@/types'
+import { useParams, useNavigate } from "react-router-dom"
+import { useQuery } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
+import { useAgent } from "@/hooks/use-agents"
+import { request } from "@/lib/api"
+import { AGENT_STATUS_MAP, QUERY_KEYS } from "@/lib/constants"
+import type { AuditLog } from "@/types"
 
 /**
  * 将 ISO 时间字符串格式化为易读的本地时间
@@ -14,13 +14,13 @@ import type { AuditLog } from '@/types'
  */
 function formatDateTime(iso: string): string {
   try {
-    return new Date(iso).toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
+    return new Date(iso).toLocaleString("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     })
   } catch {
     // 解析失败时原样返回，避免抛出
@@ -103,15 +103,13 @@ function AuditLogTimeline({ agentId }: { agentId: string }) {
   if (isError) {
     return (
       <p className="text-sm text-destructive">
-        {t('agents.auditLogsLoadFailed')}：{error instanceof Error ? error.message : t('common.unknownError')}
+        {t("agents.auditLogsLoadFailed")}：{error instanceof Error ? error.message : t("common.unknownError")}
       </p>
     )
   }
 
   if (!logs || logs.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">{t('agents.auditLogsEmpty')}</p>
-    )
+    return <p className="text-sm text-muted-foreground">{t("agents.auditLogsEmpty")}</p>
   }
 
   return (
@@ -122,21 +120,17 @@ function AuditLogTimeline({ agentId }: { agentId: string }) {
           <span className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border border-background bg-muted-foreground" />
 
           {/* 时间戳 */}
-          <time className="block text-xs text-muted-foreground">
-            {formatDateTime(log.createdAt)}
-          </time>
+          <time className="block text-xs text-muted-foreground">{formatDateTime(log.createdAt)}</time>
 
           {/* 操作动作 */}
           <p className="mt-0.5 text-sm font-medium text-foreground">
             {log.action}
             {/* 来源标注 */}
-            <span className="ml-2 text-xs font-normal text-muted-foreground">{t('agents.auditVia', { source: log.source })}</span>
+            <span className="ml-2 text-xs font-normal text-muted-foreground">{t("agents.auditVia", { source: log.source })}</span>
           </p>
 
           {/* 详情，可能为 null */}
-          {log.detail && (
-            <p className="mt-1 text-xs text-muted-foreground">{log.detail}</p>
-          )}
+          {log.detail && <p className="mt-1 text-xs text-muted-foreground">{log.detail}</p>}
         </li>
       ))}
     </ol>
@@ -153,7 +147,7 @@ function AuditLogTimeline({ agentId }: { agentId: string }) {
  * - 审计日志区：时间线组件
  */
 export function AgentDetailView() {
-  const { id = '' } = useParams<{ id: string }>() // 从路由参数取 Agent ID
+  const { id = "" } = useParams<{ id: string }>() // 从路由参数取 Agent ID
   const navigate = useNavigate()
   const { t } = useTranslation()
 
@@ -174,12 +168,10 @@ export function AgentDetailView() {
   if (isError || !agent) {
     return (
       <div>
-        <BackButton onClick={() => navigate('/agents')} />
+        <BackButton onClick={() => navigate("/agents")} />
         <div className="mt-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          <p className="font-medium">{t('common.loadFailed')}</p>
-          <p className="mt-1 text-destructive/80">
-            {error instanceof Error ? error.message : t('agents.notFound')}
-          </p>
+          <p className="font-medium">{t("common.loadFailed")}</p>
+          <p className="mt-1 text-destructive/80">{error instanceof Error ? error.message : t("agents.notFound")}</p>
         </div>
       </div>
     )
@@ -187,14 +179,15 @@ export function AgentDetailView() {
 
   return (
     <div className="space-y-8">
-
       {/* ── 顶部：返回 + 名称 + 状态 ── */}
       <div>
-        <BackButton onClick={() => navigate('/agents')} />
+        <BackButton onClick={() => navigate("/agents")} />
 
         <div className="mt-4 flex items-center gap-3">
           {/* Agent emoji */}
-          <span className="text-3xl" aria-hidden="true">{agent.emoji ?? '🤖'}</span>
+          <span className="text-3xl" aria-hidden="true">
+            {agent.emoji ?? "🤖"}
+          </span>
 
           {/* Agent 名称 */}
           <h1 className="text-2xl font-bold text-foreground">{agent.name}</h1>
@@ -207,29 +200,29 @@ export function AgentDetailView() {
       {/* ── 基本信息区 ── */}
       <section aria-labelledby="info-heading">
         <h2 id="info-heading" className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {t('agents.basicInfo')}
+          {t("agents.basicInfo")}
         </h2>
 
         {/* 分割线 + 字段列表 */}
         <div className="divide-y divide-border rounded-lg border border-border bg-card px-4">
-          <InfoRow label={t('agents.fieldId')} value={agent.id} />
-          <InfoRow label={t('agents.fieldName')} value={agent.name} />
-          <InfoRow label={t('agents.fieldEmoji')} value={agent.emoji} />
-          <InfoRow label={t('agents.fieldModel')} value={agent.model} />
-          <InfoRow label={t('agents.fieldWorkspace')} value={agent.workspace} />
-          <InfoRow label={t('agents.fieldSource')} value={t(`agents.source${agent.source.charAt(0).toUpperCase()}${agent.source.slice(1)}`)} />
-          <InfoRow label={t('agents.fieldSourceRef')} value={agent.sourceRef} />
-          <InfoRow label={t('agents.fieldLastSync')} value={agent.lastSyncAt ? formatDateTime(agent.lastSyncAt) : null} />
-          <InfoRow label={t('agents.fieldLastActive')} value={agent.lastActiveAt ? formatDateTime(agent.lastActiveAt) : null} />
-          <InfoRow label={t('agents.fieldCreatedAt')} value={formatDateTime(agent.createdAt)} />
-          <InfoRow label={t('agents.fieldUpdatedAt')} value={formatDateTime(agent.updatedAt)} />
+          <InfoRow label={t("agents.fieldId")} value={agent.id} />
+          <InfoRow label={t("agents.fieldName")} value={agent.name} />
+          <InfoRow label={t("agents.fieldEmoji")} value={agent.emoji} />
+          <InfoRow label={t("agents.fieldModel")} value={agent.model} />
+          <InfoRow label={t("agents.fieldWorkspace")} value={agent.workspace} />
+          <InfoRow label={t("agents.fieldSource")} value={t(`agents.source${agent.source.charAt(0).toUpperCase()}${agent.source.slice(1)}`)} />
+          <InfoRow label={t("agents.fieldSourceRef")} value={agent.sourceRef} />
+          <InfoRow label={t("agents.fieldLastSync")} value={agent.lastSyncAt ? formatDateTime(agent.lastSyncAt) : null} />
+          <InfoRow label={t("agents.fieldLastActive")} value={agent.lastActiveAt ? formatDateTime(agent.lastActiveAt) : null} />
+          <InfoRow label={t("agents.fieldCreatedAt")} value={formatDateTime(agent.createdAt)} />
+          <InfoRow label={t("agents.fieldUpdatedAt")} value={formatDateTime(agent.updatedAt)} />
         </div>
       </section>
 
       {/* ── Soul 区 ── */}
       <section aria-labelledby="soul-heading">
         <h2 id="soul-heading" className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {t('agents.soul')}
+          {t("agents.soul")}
         </h2>
 
         {agent.soul ? (
@@ -238,23 +231,22 @@ export function AgentDetailView() {
             readOnly
             value={agent.soul}
             rows={12}
-            aria-label={t('agents.soulAriaLabel')}
+            aria-label={t("agents.soulAriaLabel")}
             className="w-full resize-none rounded-lg border border-border bg-muted p-4 font-mono text-xs text-foreground focus:outline-none"
           />
         ) : (
-          <p className="text-sm text-muted-foreground">{t('agents.noSoul')}</p>
+          <p className="text-sm text-muted-foreground">{t("agents.noSoul")}</p>
         )}
       </section>
 
       {/* ── 审计日志区 ── */}
       <section aria-labelledby="logs-heading">
         <h2 id="logs-heading" className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {t('agents.auditLogs')}
+          {t("agents.auditLogs")}
         </h2>
 
         <AuditLogTimeline agentId={id} />
       </section>
-
     </div>
   )
 }
@@ -277,7 +269,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
     >
       {/* 左箭头字符 */}
       <span aria-hidden="true">←</span>
-      {t('agents.backToList')}
+      {t("agents.backToList")}
     </button>
   )
 }

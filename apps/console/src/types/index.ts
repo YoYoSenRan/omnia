@@ -1,8 +1,8 @@
 /** Agent 来源类型 */
-export type AgentSource = 'gateway' | 'local' | 'config'
+export type AgentSource = "gateway" | "local" | "config"
 
 /** Agent 运行状态 */
-export type AgentStatus = 'idle' | 'running' | 'error' | 'offline'
+export type AgentStatus = "idle" | "running" | "error" | "offline"
 
 /** Agent 数据结构 */
 export interface Agent {
@@ -34,7 +34,7 @@ export interface Skill {
 }
 
 /** 任务状态 */
-export type TaskStatus = 'pending' | 'assigned' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type TaskStatus = "pending" | "assigned" | "running" | "completed" | "failed" | "cancelled"
 
 /** Task 数据结构 */
 export interface Task {
@@ -51,7 +51,7 @@ export interface Task {
 }
 
 /** 会话状态 */
-export type SessionStatus = 'open' | 'closed'
+export type SessionStatus = "open" | "closed"
 
 /** Session 数据结构 */
 export interface Session {

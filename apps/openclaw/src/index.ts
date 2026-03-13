@@ -1,26 +1,21 @@
 /**
  * 服务入口
  *
- * 启动 HTTP 服务器，初始化数据库连接，注册进程级错误处理和优雅关闭。
+ * 启动 HTTP 服务器，初始化数据库连接，连接网关，注册优雅关闭。
  *
  * @module index
  */
 
 import { serve } from '@hono/node-server'
 import { app } from './app.js'
-import { PORT } from './lib/env.js'
-import { logger } from './lib/logger.js'
+import { PORT, GATEWAY_URL, GATEWAY_TOKEN } from './utils/env.js'
+import { logger } from './utils/logger.js'
 import { checkConnection, closeDatabase } from './db/index.js'
+import { GatewayClient, setGatewayClient } from './gateway/client.js'
+import { handleGatewayFrame } from './gateway/handler.js'
 
-/**
- * 启动服务
- *
- * 流程：
- * 1. 检查数据库连接
- * 2. 启动 HTTP 服务器
- * 3. 注册进程级错误处理
- * 4. 注册优雅关闭钩子
- */
+let gatewayClient: GatewayClient | null = null
+
 async function bootstrap(): Promise<void> {
   /* 1. 验证数据库连接 */
   const dbReady = await checkConnection()
@@ -38,16 +33,32 @@ async function bootstrap(): Promise<void> {
 
   logger.info({ port: PORT }, 'Omnia openclaw service started')
 
-  /* 3. 优雅关闭 */
+  /* 3. 连接网关（可选） */
+  if (GATEWAY_URL) {
+    gatewayClient = new GatewayClient({
+      url: GATEWAY_URL,
+      token: GATEWAY_TOKEN || undefined,
+    })
+    gatewayClient.onMessage(handleGatewayFrame)
+    gatewayClient.connect()
+    setGatewayClient(gatewayClient)
+    logger.info({ url: GATEWAY_URL }, 'Gateway client initialized')
+  } else {
+    logger.info('No GATEWAY_URL configured, running in standalone mode')
+  }
+
+  /* 4. 优雅关闭 */
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutdown signal received, starting graceful shutdown')
 
-    /* 停止接受新连接 */
     server.close(() => {
       logger.info('HTTP server closed')
     })
 
-    /* 关闭数据库连接池 */
+    if (gatewayClient) {
+      gatewayClient.disconnect()
+    }
+
     await closeDatabase()
 
     logger.info('Graceful shutdown completed')
@@ -70,7 +81,6 @@ process.on('uncaughtException', (err) => {
   process.exit(1)
 })
 
-/* 启动服务 */
 bootstrap().catch((err) => {
   logger.fatal({ err }, 'Bootstrap failed')
   process.exit(1)

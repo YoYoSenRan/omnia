@@ -10,7 +10,7 @@
  */
 
 import { EventEmitter } from 'node:events'
-import { eventLogger } from '../lib/logger.js'
+import { eventLogger } from '../utils/logger.js'
 
 /** 事件负载基础类型 */
 export interface EventPayload {

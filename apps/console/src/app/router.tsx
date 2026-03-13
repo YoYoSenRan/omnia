@@ -1,11 +1,11 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Layout } from '@/layouts'
-import { Dashboard } from '@/views/dashboard'
-import { AgentsView } from '@/views/agents'
-import { AgentDetailView } from '@/views/agents/detail'
-import { Skills } from '@/views/skills'
-import { Tasks } from '@/views/tasks'
-import { Sessions } from '@/views/sessions'
+import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { Layout } from "@/layouts"
+import { Dashboard } from "@/views/dashboard"
+import { AgentsView } from "@/views/agents"
+import { AgentDetailView } from "@/views/agents/detail"
+import { Skills } from "@/views/skills"
+import { Tasks } from "@/views/tasks"
+import { Sessions } from "@/views/sessions"
 
 export function AppRouter() {
   return (

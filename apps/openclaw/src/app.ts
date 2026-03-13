@@ -1,32 +1,25 @@
 /**
  * Hono 应用初始化
  *
- * 配置全局中间件（CORS、请求日志、鉴权）、注册路由、
- * 设置全局错误处理和 404 兜底。
- *
- * 路由分组：
- * - /health — 无鉴权，健康检查
- * - /api/*  — API Key 鉴权，供 console 前端使用
- * - /open/* — Service Token 鉴权，供 server 服务间调用
+ * 中间件 + 路由挂载 + 错误处理，保持薄。
  *
  * @module app
  */
 
-/** 自定义 Hono 变量类型，供中间件注入使用 */
 type AppVariables = {
-  /** 请求唯一标识 */
   reqId: string
 }
 
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger as honoLogger } from 'hono/logger'
-import { API_KEY, SERVICE_TOKEN, CORS_ORIGIN } from './lib/env.js'
-import { logger } from './lib/logger.js'
-import { AppError } from './lib/errors.js'
-import { CODE } from './lib/code.js'
-import { fail } from './lib/response.js'
-import { apiKeyAuth, serviceAuth } from './lib/auth.js'
+import { API_KEY, SERVICE_TOKEN, CORS_ORIGIN } from './utils/env.js'
+import { logger } from './utils/logger.js'
+import { AppError } from './http/errors.js'
+import { CODE } from './http/code.js'
+import { fail } from './http/response.js'
+import { apiKeyAuth, serviceAuth } from './middleware/auth.js'
+import { requestId } from './middleware/request-id.js'
 
 /* 路由模块 */
 import { systemRoutes } from './routes/system.js'
@@ -41,7 +34,6 @@ export const app = new Hono<{ Variables: AppVariables }>()
 
 // ── 全局中间件 ────────────────────────────────────────────
 
-/* CORS 配置 */
 app.use(
   '*',
   cors({
@@ -51,30 +43,8 @@ app.use(
   }),
 )
 
-/* 请求日志（开发环境使用 Hono 内置 logger） */
 app.use('*', honoLogger())
-
-/* 请求 ID 注入 + 结构化日志 */
-app.use('*', async (c, next) => {
-  const reqId = c.req.header('X-Request-Id') ?? crypto.randomUUID()
-  c.set('reqId', reqId)
-  c.header('X-Request-Id', reqId)
-
-  const start = Date.now()
-  await next()
-  const duration = Date.now() - start
-
-  logger.info(
-    {
-      reqId,
-      method: c.req.method,
-      path: c.req.path,
-      status: c.res.status,
-      duration,
-    },
-    'Request completed',
-  )
-})
+app.use('*', requestId)
 
 // ── 公开路由（无鉴权） ───────────────────────────────────
 
@@ -84,10 +54,8 @@ app.route('/', systemRoutes)
 
 app.use('/api/*', apiKeyAuth(API_KEY))
 
-/* SSE 事件流 */
 app.get('/api/events/stream', handleSSE)
 
-/* 业务路由 */
 app.route('/api/agents', agentRoutes)
 app.route('/api/skills', skillRoutes)
 app.route('/api/tasks', taskRoutes)
@@ -104,12 +72,6 @@ app.route('/open/sessions', sessionOpenRoutes)
 
 // ── 全局错误处理 ──────────────────────────────────────────
 
-/**
- * 全局错误处理器
- *
- * - AppError：业务错误，返回对应的 HTTP 状态码和业务码
- * - 其他错误：未捕获异常，返回 500
- */
 app.onError((err, c) => {
   const reqId = c.get('reqId') as string | undefined
 
@@ -118,14 +80,12 @@ app.onError((err, c) => {
     return fail(c, err.httpStatus, err.code, err.message)
   }
 
-  /* 未捕获的异常，记录完整错误栈 */
   logger.error({ reqId, err }, 'Unhandled error')
   const message =
     process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
   return fail(c, 500, CODE.INTERNAL_ERROR, message)
 })
 
-/** 404 兜底 */
 app.notFound((c) => {
   return fail(c, 404, CODE.NOT_FOUND, `Route not found: ${c.req.method} ${c.req.path}`)
 })

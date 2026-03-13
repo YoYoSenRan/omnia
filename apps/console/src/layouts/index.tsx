@@ -1,6 +1,6 @@
-import { Outlet } from 'react-router-dom'
-import { Sidebar } from '@/layouts/sidebar'
-import { Header } from '@/layouts/header'
+import { Outlet } from "react-router-dom"
+import { Sidebar } from "@/layouts/sidebar"
+import { Header } from "@/layouts/header"
 
 export function Layout() {
   return (
