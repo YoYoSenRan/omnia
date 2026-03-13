@@ -16,6 +16,8 @@ export type GatewayStatus = "disconnected" | "connecting" | "connected" | "error
 export interface GatewayClientOptions {
   url: string
   token?: string
+  /** 动态 Token 提供函数，每次连接/重连时调用以获取最新 Token */
+  tokenProvider?: () => string
   /** 最大重连次数 */
   maxRetries?: number
   /** 心跳间隔（ms） */
@@ -55,14 +57,14 @@ export class GatewayClient {
   private messageHandler: MessageHandler | null = null
 
   private readonly url: string
-  private readonly token: string
+  private readonly tokenProvider: () => string
   private readonly maxRetries: number
   private readonly heartbeatInterval: number
   private readonly requestTimeout: number
 
   constructor(options: GatewayClientOptions) {
     this.url = options.url
-    this.token = options.token ?? ""
+    this.tokenProvider = options.tokenProvider ?? (() => options.token ?? "")
     this.maxRetries = options.maxRetries ?? 10
     this.heartbeatInterval = options.heartbeatInterval ?? 30_000
     this.requestTimeout = options.requestTimeout ?? 10_000
@@ -108,12 +110,13 @@ export class GatewayClient {
       this.retryCount = 0
       this.missedPongs = 0
 
-      // 发送握手
+      // 发送握手（每次连接时重新获取 Token，支持 Gateway 重启后 Token 变更）
+      const currentToken = this.tokenProvider()
       const handshake: HandshakePayload = {
         protocol: "v3",
         client: "omnia-openclaw",
         mode: "server",
-        token: this.token || undefined,
+        token: currentToken || undefined,
       }
       this.send({ type: "event", event: "handshake", payload: handshake })
 

@@ -11,7 +11,8 @@ import { agentRepo } from "../db/repo/agent.js"
 import { activityRepo } from "../db/repo/activity.js"
 import { emitEvent } from "../events/bus.js"
 import { syncLogger } from "../utils/logger.js"
-import { AGENTS_DIR, OPENCLAW_CONFIG } from "../utils/env.js"
+import { AGENTS_DIR } from "../utils/env.js"
+import { readOpenClawConfig, getConfigPath, resolveModelString } from "../gateway/config.js"
 import type { AgentInsert, AgentRow } from "../db/schema/index.js"
 import type { GatewayClient } from "../gateway/client.js"
 
@@ -130,32 +131,36 @@ export const syncService = {
 
   /**
    * 从配置文件发现 agent
+   *
+   * 读取 openclaw.json 中的 agents.list[]，合并 agents.defaults 继承值。
+   * model 字段可能是字符串或 { primary: string } 对象，统一取字符串。
    */
   async discoverFromConfig(configPath?: string): Promise<DiscoveredAgent[]> {
-    const path = resolvePath(configPath ?? OPENCLAW_CONFIG)
+    const config = readOpenClawConfig(configPath)
+    if (!config?.agents?.list) return []
 
-    try {
-      const content = await readFile(path, "utf-8")
-      const config = JSON.parse(content) as { agents?: Record<string, unknown>[] }
+    const defaults = config.agents.defaults ?? {}
+    const configFile = getConfigPath()
 
-      if (!Array.isArray(config.agents)) return []
+    return config.agents.list.map((a) => {
+      const model = resolveModelString(a.model) ?? resolveModelString(defaults.model) ?? null
+      const workspace = a.workspace ?? defaults.workspace ?? null
 
-      return config.agents.map((a) => ({
-        id: String(a.id ?? a.name),
-        name: String(a.name ?? "unnamed"),
+      const merged = { ...a, model, workspace }
+
+      return {
+        id: a.id,
+        name: a.name ?? a.id,
         source: "config" as const,
-        sourceRef: path,
-        emoji: a.emoji ? String(a.emoji) : null,
-        role: a.role ? String(a.role) : null,
-        model: a.model ? String(a.model) : null,
-        workspace: a.workspace ? String(a.workspace) : null,
-        config: a.config ?? null,
-        contentHash: sha256(JSON.stringify(a)),
-      }))
-    } catch (err) {
-      syncLogger.debug({ err, path }, "Config file not accessible")
-      return []
-    }
+        sourceRef: configFile,
+        emoji: null,
+        role: null,
+        model,
+        workspace: workspace ? resolvePath(workspace) : null,
+        config: a,
+        contentHash: sha256(JSON.stringify(merged)),
+      }
+    })
   },
 
   /**

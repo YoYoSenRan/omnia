@@ -8,11 +8,12 @@
 
 import { serve } from "@hono/node-server"
 import { app } from "./app.js"
-import { PORT, GATEWAY_URL, GATEWAY_TOKEN } from "./utils/env.js"
+import { PORT } from "./utils/env.js"
 import { logger } from "./utils/logger.js"
 import { checkConnection, closeDatabase } from "./db/index.js"
 import { GatewayClient, setGatewayClient } from "./gateway/client.js"
 import { handleGatewayFrame } from "./gateway/handler.js"
+import { detectGatewayUrl, detectGatewayToken } from "./gateway/config.js"
 
 let gatewayClient: GatewayClient | null = null
 
@@ -34,17 +35,18 @@ async function bootstrap(): Promise<void> {
   logger.info({ port: PORT }, "Omnia openclaw service started")
 
   /* 3. 连接网关（可选） */
-  if (GATEWAY_URL) {
+  const gwUrl = detectGatewayUrl()
+  if (gwUrl) {
     gatewayClient = new GatewayClient({
-      url: GATEWAY_URL,
-      token: GATEWAY_TOKEN || undefined,
+      url: gwUrl,
+      tokenProvider: detectGatewayToken,
     })
     gatewayClient.onMessage(handleGatewayFrame)
     gatewayClient.connect()
     setGatewayClient(gatewayClient)
-    logger.info({ url: GATEWAY_URL }, "Gateway client initialized")
+    logger.info({ url: gwUrl }, "Gateway client initialized")
   } else {
-    logger.info("No GATEWAY_URL configured, running in standalone mode")
+    logger.info("No gateway URL detected, running in standalone mode")
   }
 
   /* 4. 优雅关闭 */
