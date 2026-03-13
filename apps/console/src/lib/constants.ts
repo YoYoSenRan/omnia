@@ -9,6 +9,9 @@ export const QUERY_KEYS = {
   task: (id: string) => ["tasks", id] as const,
   sessions: ["sessions"] as const,
   session: (id: string) => ["sessions", id] as const,
+  activities: ["activities"] as const,
+  health: ["health"] as const,
+  gatewayStatus: ["gatewayStatus"] as const,
 } as const
 
 /** Agent 状态的显示文案和颜色 */
@@ -35,3 +38,13 @@ export const TASK_STATUS_MAP = {
   failed: { label: "Failed", color: "text-red-600" },
   cancelled: { label: "Cancelled", color: "text-gray-400" },
 } as const
+
+/** Task 状态 → 进度条填充色 */
+export const TASK_STATUS_COLOR_MAP: Record<string, string> = {
+  pending: "bg-gray-400",
+  assigned: "bg-blue-500",
+  running: "bg-green-500",
+  completed: "bg-emerald-500",
+  failed: "bg-red-500",
+  cancelled: "bg-gray-300",
+}

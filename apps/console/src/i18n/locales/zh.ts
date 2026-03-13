@@ -30,6 +30,41 @@ export default {
   dashboard: {
     title: "仪表盘",
     subtitle: "Omnia Console — OpenClaw 控制面板",
+
+    /* 统计卡片 */
+    statAgents: "智能体",
+    statSkills: "技能",
+    statTasks: "任务",
+    statSessions: "会话",
+    online: "在线",
+    active: "活跃",
+    inProgress: "进行中",
+    total: "共",
+
+    /* 系统状态 */
+    systemStatus: "系统状态",
+    backendNormal: "后端正常",
+    backendDown: "后端离线",
+    gatewayConnected: "网关已连接",
+    gatewayDisconnected: "网关未连接",
+    triggerSync: "触发同步",
+    syncing: "同步中…",
+    syncSuccess: "同步成功",
+    syncFailed: "同步失败",
+
+    /* 活动时间线 */
+    recentActivity: "最近活动",
+    noActivity: "暂无最近活动",
+
+    /* Agent 一览 */
+    agentOverview: "智能体一览",
+    viewAllAgents: "查看全部",
+
+    /* 任务分布 */
+    taskDistribution: "任务分布",
+    noTasks: "暂无任务",
+    createTask: "查看任务",
+    createAgent: "新建智能体",
   },
 
   /* ── Agents ────────────────────────────────────── */

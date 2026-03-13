@@ -30,6 +30,41 @@ export default {
   dashboard: {
     title: "Dashboard",
     subtitle: "Omnia Console — OpenClaw Control Panel",
+
+    /* Stat cards */
+    statAgents: "Agents",
+    statSkills: "Skills",
+    statTasks: "Tasks",
+    statSessions: "Sessions",
+    online: "Online",
+    active: "Active",
+    inProgress: "In Progress",
+    total: "Total",
+
+    /* System status */
+    systemStatus: "System Status",
+    backendNormal: "Backend OK",
+    backendDown: "Backend Down",
+    gatewayConnected: "Gateway Connected",
+    gatewayDisconnected: "Gateway Disconnected",
+    triggerSync: "Sync",
+    syncing: "Syncing…",
+    syncSuccess: "Sync successful",
+    syncFailed: "Sync failed",
+
+    /* Activity feed */
+    recentActivity: "Recent Activity",
+    noActivity: "No recent activity",
+
+    /* Agent overview */
+    agentOverview: "Agent Overview",
+    viewAllAgents: "View All",
+
+    /* Task distribution */
+    taskDistribution: "Task Distribution",
+    noTasks: "No tasks yet",
+    createTask: "View Tasks",
+    createAgent: "New Agent",
   },
 
   /* ── Agents ────────────────────────────────────── */

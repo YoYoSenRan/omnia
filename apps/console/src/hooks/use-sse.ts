@@ -5,12 +5,12 @@ import { QUERY_KEYS } from "@/lib/constants"
 
 /** SSE 事件名 → 需要刷新的 Query Key 映射 */
 const EVENT_INVALIDATION_MAP: Record<string, readonly (readonly string[])[]> = {
-  "agent.synced": [QUERY_KEYS.agents],
-  "agent.status": [QUERY_KEYS.agents],
-  "task.created": [QUERY_KEYS.tasks],
-  "task.updated": [QUERY_KEYS.tasks],
-  "task.completed": [QUERY_KEYS.tasks],
-  "session.created": [QUERY_KEYS.sessions],
+  "agent.synced": [QUERY_KEYS.agents, QUERY_KEYS.activities],
+  "agent.status": [QUERY_KEYS.agents, QUERY_KEYS.activities],
+  "task.created": [QUERY_KEYS.tasks, QUERY_KEYS.activities],
+  "task.updated": [QUERY_KEYS.tasks, QUERY_KEYS.activities],
+  "task.completed": [QUERY_KEYS.tasks, QUERY_KEYS.activities],
+  "session.created": [QUERY_KEYS.sessions, QUERY_KEYS.activities],
 }
 
 /**

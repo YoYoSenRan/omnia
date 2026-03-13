@@ -73,6 +73,18 @@ export interface AuditLog {
   createdAt: string
 }
 
+/** 后端健康状态 */
+export interface HealthStatus {
+  status: string
+  timestamp: string
+}
+
+/** 网关连接状态 */
+export interface GatewayStatus {
+  status: string
+  connectedAt?: string
+}
+
 /** 统一 API 响应格式 */
 export interface ApiResponse<T = unknown> {
   ok: boolean
