@@ -1,12 +1,3 @@
-/**
- * 全局 Provider 层
- *
- * 集中管理 QueryClientProvider 等全局上下文，
- * 避免 App.tsx 内嵌套过深。
- *
- * @module app/providers
- */
-
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 

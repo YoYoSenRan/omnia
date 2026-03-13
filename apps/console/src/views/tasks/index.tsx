@@ -1,18 +1,8 @@
-/**
- * Tasks 列表页
- *
- * 展示所有任务，按状态分三列（待处理 / 进行中 / 已完成）呈现看板式布局。
- * 数据通过 TanStack Query 从 /api/tasks 拉取，处理加载、空状态和错误三种场景。
- *
- * @module views/tasks
- */
-
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { request } from '@/lib/api'
 import { QUERY_KEYS, TASK_STATUS_MAP } from '@/lib/constants'
 import type { Task, TaskStatus } from '@/types'
-
-// ── 常量 ──────────────────────────────────────────────────────────────────────
 
 /**
  * 看板列定义
@@ -21,31 +11,29 @@ import type { Task, TaskStatus } from '@/types'
  * 顺序决定列的渲染顺序。
  */
 const COLUMNS: {
-  /** 列标题 */
-  title: string
+  /** 列标题对应的 i18n key */
+  titleKey: string
   /** 该列包含的 TaskStatus 值 */
   statuses: TaskStatus[]
   /** 列标题的文字颜色 className */
   titleClass: string
 }[] = [
   {
-    title: 'Queued',
+    titleKey: 'tasks.columnQueued',
     statuses: ['pending', 'assigned'],
     titleClass: 'text-foreground',
   },
   {
-    title: 'In Progress',
+    titleKey: 'tasks.columnInProgress',
     statuses: ['running'],
     titleClass: 'text-green-600',
   },
   {
-    title: 'Done',
+    titleKey: 'tasks.columnDone',
     statuses: ['completed', 'failed', 'cancelled'],
     titleClass: 'text-muted-foreground',
   },
 ]
-
-// ── 工具函数 ──────────────────────────────────────────────────────────────────
 
 /**
  * 将 ISO 时间字符串格式化为本地日期时间短格式
@@ -61,8 +49,6 @@ function formatDate(iso: string): string {
     minute: '2-digit',
   })
 }
-
-// ── 子组件 ────────────────────────────────────────────────────────────────────
 
 /**
  * TaskCard 组件 Props
@@ -81,6 +67,7 @@ interface TaskCardProps {
  * @param props - {@link TaskCardProps}
  */
 function TaskCard({ task }: TaskCardProps) {
+  const { t } = useTranslation()
   /** 当前状态的显示配置（label + color） */
   const statusConfig = TASK_STATUS_MAP[task.status]
 
@@ -93,14 +80,14 @@ function TaskCard({ task }: TaskCardProps) {
         </p>
         {/* 状态标签 */}
         <span className={`shrink-0 text-xs font-medium ${statusConfig.color}`}>
-          {statusConfig.label}
+          {t(`tasks.status${task.status.charAt(0).toUpperCase()}${task.status.slice(1)}`)}
         </span>
       </div>
 
       {/* 负责人：仅当 assignedTo 有值时才渲染 */}
       {task.assignedTo && (
         <p className="mt-1.5 text-xs text-muted-foreground truncate">
-          Agent: {task.assignedTo}
+          {t('tasks.assignedTo', { agent: task.assignedTo })}
         </p>
       )}
 
@@ -133,6 +120,7 @@ interface KanbanColumnProps {
  * @param props - {@link KanbanColumnProps}
  */
 function KanbanColumn({ title, titleClass, tasks }: KanbanColumnProps) {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-col gap-3">
       {/* 列头：标题 + 任务数量 */}
@@ -148,7 +136,7 @@ function KanbanColumn({ title, titleClass, tasks }: KanbanColumnProps) {
       {tasks.length === 0 ? (
         /* 空状态：该列无任务 */
         <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center">
-          <p className="text-xs text-muted-foreground">No tasks</p>
+          <p className="text-xs text-muted-foreground">{t('tasks.columnEmpty')}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -161,8 +149,6 @@ function KanbanColumn({ title, titleClass, tasks }: KanbanColumnProps) {
   )
 }
 
-// ── 主页面 ────────────────────────────────────────────────────────────────────
-
 /**
  * Tasks 列表页面组件
  *
@@ -173,34 +159,33 @@ function KanbanColumn({ title, titleClass, tasks }: KanbanColumnProps) {
  * 4. 处理加载中 / 错误 / 空数据三种场景
  */
 export function Tasks() {
+  const { t } = useTranslation()
   // 拉取任务列表，结果缓存在 QUERY_KEYS.tasks 下
   const { data: tasks, isLoading, isError, error } = useQuery<Task[]>({
     queryKey: QUERY_KEYS.tasks,
     queryFn: () => request<Task[]>('/api/tasks'),
   })
 
-  // ── 加载状态 ────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Tasks</h2>
-        <p className="mt-2 text-muted-foreground">Manage and monitor all agent tasks.</p>
-        <p className="mt-8 text-sm text-muted-foreground">Loading tasks...</p>
+        <h2 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h2>
+        <p className="mt-2 text-muted-foreground">{t('tasks.subtitle')}</p>
+        <p className="mt-8 text-sm text-muted-foreground">{t('common.loading')}</p>
       </div>
     )
   }
 
-  // ── 错误状态 ────────────────────────────────────────────────────────────────
   if (isError) {
     /** 错误消息，优先取 Error.message */
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.'
+    const errorMessage = error instanceof Error ? error.message : t('common.unknownError')
 
     return (
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Tasks</h2>
-        <p className="mt-2 text-muted-foreground">Manage and monitor all agent tasks.</p>
+        <h2 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h2>
+        <p className="mt-2 text-muted-foreground">{t('tasks.subtitle')}</p>
         <div className="mt-8 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
-          <p className="text-sm font-medium text-destructive">Failed to load tasks</p>
+          <p className="text-sm font-medium text-destructive">{t('common.loadFailed')}</p>
           <p className="mt-1 text-xs text-destructive/80">{errorMessage}</p>
         </div>
       </div>
@@ -210,28 +195,24 @@ export function Tasks() {
   /** 任务列表，API 返回 null 时降级为空数组 */
   const taskList: Task[] = tasks ?? []
 
-  // ── 全局空状态（无任何任务） ─────────────────────────────────────────────────
   if (taskList.length === 0) {
     return (
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Tasks</h2>
-        <p className="mt-2 text-muted-foreground">Manage and monitor all agent tasks.</p>
+        <h2 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h2>
+        <p className="mt-2 text-muted-foreground">{t('tasks.subtitle')}</p>
         <div className="mt-8 rounded-lg border border-dashed border-border px-6 py-12 text-center">
-          <p className="text-sm font-medium text-foreground">No tasks yet</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Tasks will appear here once agents start working.
-          </p>
+          <p className="text-sm font-medium text-foreground">{t('tasks.empty')}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t('tasks.emptyHint')}</p>
         </div>
       </div>
     )
   }
 
-  // ── 正常渲染：三列看板 ────────────────────────────────────────────────────────
   return (
     <div>
       {/* 页面头部：标题 + 描述 */}
-      <h2 className="text-2xl font-bold text-foreground">Tasks</h2>
-      <p className="mt-2 text-muted-foreground">Manage and monitor all agent tasks.</p>
+      <h2 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h2>
+      <p className="mt-2 text-muted-foreground">{t('tasks.subtitle')}</p>
 
       {/* 看板区域：三列等宽分栏，间距 gap-4 */}
       <div className="mt-6 grid grid-cols-3 gap-4">
@@ -241,12 +222,12 @@ export function Tasks() {
            * 用 Set 加速 includes 查找，避免数组遍历
            */
           const statusSet = new Set<TaskStatus>(col.statuses)
-          const colTasks = taskList.filter((t) => statusSet.has(t.status))
+          const colTasks = taskList.filter((task) => statusSet.has(task.status))
 
           return (
             <KanbanColumn
-              key={col.title}
-              title={col.title}
+              key={col.titleKey}
+              title={t(col.titleKey)}
               titleClass={col.titleClass}
               tasks={colTasks}
             />

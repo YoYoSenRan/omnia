@@ -1,11 +1,3 @@
-/**
- * 连接状态 Store
- *
- * 管理 SSE 连接状态和网关连接状态等全局状态。
- *
- * @module stores/connection
- */
-
 import { create } from 'zustand'
 
 interface ConnectionState {

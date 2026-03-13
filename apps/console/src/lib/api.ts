@@ -1,12 +1,3 @@
-/**
- * API 客户端
- *
- * 封装 fetch 请求，统一处理鉴权头、响应格式解析和错误处理。
- * 所有 API 调用通过此模块发起。
- *
- * @module lib/api
- */
-
 /** API 基础地址 */
 const API_BASE = import.meta.env.VITE_API_BASE ?? ''
 

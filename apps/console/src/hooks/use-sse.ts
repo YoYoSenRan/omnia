@@ -1,12 +1,3 @@
-/**
- * SSE 事件订阅 Hook
- *
- * 建立与 openclaw 服务的 SSE 连接，监听实时事件。
- * 收到事件后自动触发对应的 TanStack Query 缓存刷新。
- *
- * @module hooks/use-sse
- */
-
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useConnectionStore } from '@/stores/connection'

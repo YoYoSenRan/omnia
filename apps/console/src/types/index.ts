@@ -1,14 +1,3 @@
-/**
- * 全局类型定义
- *
- * 与 openclaw 后端 API 返回数据对应的前端类型。
- * 集中管理避免各文件重复定义。
- *
- * @module types
- */
-
-// ── Agent ─────────────────────────────────────────────────
-
 /** Agent 来源类型 */
 export type AgentSource = 'gateway' | 'local' | 'config'
 
@@ -33,8 +22,6 @@ export interface Agent {
   updatedAt: string
 }
 
-// ── Skill ─────────────────────────────────────────────────
-
 /** Skill 数据结构 */
 export interface Skill {
   id: string
@@ -45,8 +32,6 @@ export interface Skill {
   createdAt: string
   updatedAt: string
 }
-
-// ── Task ──────────────────────────────────────────────────
 
 /** 任务状态 */
 export type TaskStatus = 'pending' | 'assigned' | 'running' | 'completed' | 'failed' | 'cancelled'
@@ -65,8 +50,6 @@ export interface Task {
   completedAt: string | null
 }
 
-// ── Session ───────────────────────────────────────────────
-
 /** 会话状态 */
 export type SessionStatus = 'open' | 'closed'
 
@@ -79,8 +62,6 @@ export interface Session {
   closedAt: string | null
 }
 
-// ── Audit Log ─────────────────────────────────────────────
-
 /** 审计日志 */
 export interface AuditLog {
   id: number
@@ -91,8 +72,6 @@ export interface AuditLog {
   source: string
   createdAt: string
 }
-
-// ── API 通用 ──────────────────────────────────────────────
 
 /** 统一 API 响应格式 */
 export interface ApiResponse<T = unknown> {

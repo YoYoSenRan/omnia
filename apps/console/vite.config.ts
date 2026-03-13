@@ -11,11 +11,12 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5301,
+    strictPort: true,
     /* 代理 API 请求到 openclaw 服务 */
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3301',
         changeOrigin: true,
       },
     },

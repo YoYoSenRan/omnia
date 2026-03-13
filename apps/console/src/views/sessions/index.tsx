@@ -1,18 +1,8 @@
-/**
- * Sessions 列表页
- *
- * 展示系统中所有 Session 的列表，支持加载中、空状态和错误状态处理。
- * 每行显示 Session ID（前8位）、所属 Agent ID、状态标签、创建时间和关闭时间。
- *
- * @module views/sessions
- */
-
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { request } from '@/lib/api'
 import { QUERY_KEYS } from '@/lib/constants'
 import type { Session, SessionStatus } from '@/types'
-
-// ── 工具函数 ───────────────────────────────────────────────
 
 /**
  * 格式化 ISO 时间字符串为本地可读格式
@@ -35,8 +25,6 @@ function truncateId(id: string): string {
   return id.slice(0, 8)
 }
 
-// ── 子组件 ─────────────────────────────────────────────────
-
 /**
  * SessionStatusBadge 组件 Props
  */
@@ -54,6 +42,7 @@ interface SessionStatusBadgeProps {
  * @param props - 组件属性
  */
 function SessionStatusBadge({ status }: SessionStatusBadgeProps) {
+  const { t } = useTranslation()
   /** open 状态用绿色，closed 状态用灰色 */
   const dotClass =
     status === 'open'
@@ -71,7 +60,9 @@ function SessionStatusBadge({ status }: SessionStatusBadgeProps) {
       {/* 状态指示圆点 */}
       <span className={`h-2 w-2 rounded-full ${dotClass}`} aria-hidden="true" />
       {/* 状态文字 */}
-      <span className={`text-xs font-medium capitalize ${textClass}`}>{status}</span>
+      <span className={`text-xs font-medium capitalize ${textClass}`}>
+        {t(`sessions.status${status.charAt(0).toUpperCase()}${status.slice(1)}`)}
+      </span>
     </span>
   )
 }
@@ -122,18 +113,17 @@ function SessionRow({ session }: SessionRowProps) {
  * 与 SessionRow 使用相同的 grid 布局，保持列对齐。
  */
 function SessionListHeader() {
+  const { t } = useTranslation()
   return (
     <div className="grid grid-cols-[1fr_1fr_100px_1fr_1fr] items-center gap-4 border-b border-border bg-muted/50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-      <span>Session ID</span>
-      <span>Agent ID</span>
-      <span>Status</span>
-      <span>Created At</span>
-      <span>Closed At</span>
+      <span>{t('sessions.colId')}</span>
+      <span>{t('sessions.colAgentId')}</span>
+      <span>{t('sessions.colStatus')}</span>
+      <span>{t('sessions.colCreatedAt')}</span>
+      <span>{t('sessions.colClosedAt')}</span>
     </div>
   )
 }
-
-// ── 主视图 ─────────────────────────────────────────────────
 
 /**
  * Sessions 列表页主组件
@@ -142,6 +132,7 @@ function SessionListHeader() {
  * 并根据请求状态分别渲染加载中、错误、空状态和正常列表。
  */
 export function Sessions() {
+  const { t } = useTranslation()
   /**
    * 发起 Sessions 列表查询
    * queryKey 来自常量，保持缓存 key 一致性
@@ -160,10 +151,8 @@ export function Sessions() {
     <div className="space-y-6">
       {/* 页面标题区域 */}
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Sessions</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          查看所有 Agent 会话记录，包括当前活跃和已关闭的会话。
-        </p>
+        <h2 className="text-2xl font-bold text-foreground">{t('sessions.title')}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t('sessions.subtitle')}</p>
       </div>
 
       {/* 列表容器 */}
@@ -171,17 +160,17 @@ export function Sessions() {
         {/* ── 加载中状态 ── */}
         {isLoading && (
           <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-            <span>Loading sessions...</span>
+            <span>{t('common.loading')}</span>
           </div>
         )}
 
         {/* ── 错误状态 ── */}
         {isError && (
           <div className="flex flex-col items-center justify-center gap-1 py-16">
-            <p className="text-sm font-medium text-destructive">Failed to load sessions</p>
+            <p className="text-sm font-medium text-destructive">{t('common.loadFailed')}</p>
             {/* 展示具体错误信息，帮助排查问题 */}
             <p className="text-xs text-muted-foreground">
-              {error instanceof Error ? error.message : 'Unknown error'}
+              {error instanceof Error ? error.message : t('common.unknownError')}
             </p>
           </div>
         )}
@@ -195,7 +184,7 @@ export function Sessions() {
             {/* ── 空状态 ── */}
             {sessions && sessions.length === 0 && (
               <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-                No sessions found.
+                {t('sessions.empty')}
               </div>
             )}
 

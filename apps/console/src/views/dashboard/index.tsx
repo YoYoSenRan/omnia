@@ -1,16 +1,12 @@
-/**
- * Dashboard 页面
- *
- * 控制台首页，展示系统概览信息。
- *
- * @module views/dashboard
- */
+import { useTranslation } from 'react-i18next'
 
 export function Dashboard() {
+  const { t } = useTranslation()
+
   return (
     <div>
-      <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
-      <p className="mt-2 text-muted-foreground">Omnia Console — OpenClaw 控制面板</p>
+      <h2 className="text-2xl font-bold text-foreground">{t('dashboard.title')}</h2>
+      <p className="mt-2 text-muted-foreground">{t('dashboard.subtitle')}</p>
     </div>
   )
 }

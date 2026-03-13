@@ -8,7 +8,7 @@
  */
 
 /** 服务端口 */
-export const PORT = Number(process.env.PORT ?? 3001)
+export const PORT = Number(process.env.PORT ?? 3301)
 
 /** PostgreSQL 连接地址 */
 export const DATABASE_URL =
@@ -42,4 +42,4 @@ export const NODE_ENV = process.env.NODE_ENV ?? 'development'
 export const IS_DEV = NODE_ENV === 'development'
 
 /** CORS 允许的来源 */
-export const CORS_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:5173'
+export const CORS_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:5301'

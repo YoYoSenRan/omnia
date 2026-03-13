@@ -1,12 +1,3 @@
-/**
- * Agent 数据 Hook
- *
- * 封装 Agent 相关的 TanStack Query 查询和变更操作。
- * 页面组件通过这些 Hook 获取数据，不直接调用 API。
- *
- * @module hooks/use-agents
- */
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { request } from '@/lib/api'
 import { QUERY_KEYS } from '@/lib/constants'

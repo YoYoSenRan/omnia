@@ -1,17 +1,10 @@
-/**
- * 侧边栏组件
- *
- * 控制台左侧导航栏，包含 Logo 和导航菜单。
- *
- * @module layouts/sidebar
- */
-
 import { Link, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 /** 导航项定义 */
 interface NavItem {
-  /** 显示文案 */
+  /** i18n key */
   label: string
   /** 路由路径 */
   path: string
@@ -19,21 +12,22 @@ interface NavItem {
 
 /** 侧边栏导航项配置 */
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', path: '/' },
-  { label: 'Agents', path: '/agents' },
-  { label: 'Skills', path: '/skills' },
-  { label: 'Tasks', path: '/tasks' },
-  { label: 'Sessions', path: '/sessions' },
+  { label: 'nav.dashboard', path: '/' },
+  { label: 'nav.agents', path: '/agents' },
+  { label: 'nav.skills', path: '/skills' },
+  { label: 'nav.tasks', path: '/tasks' },
+  { label: 'nav.sessions', path: '/sessions' },
 ]
 
 export function Sidebar() {
   const { pathname } = useLocation()
+  const { t } = useTranslation()
 
   return (
     <aside className="w-60 bg-background border-r border-border flex flex-col">
       {/* Logo 区域 */}
       <div className="h-14 flex items-center px-4 border-b border-border">
-        <h1 className="text-lg font-semibold text-foreground">Omnia Console</h1>
+        <h1 className="text-lg font-semibold text-foreground">{t('common.appName')}</h1>
       </div>
 
       {/* 导航菜单 */}
@@ -54,7 +48,7 @@ export function Sidebar() {
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
               )}
             >
-              {item.label}
+              {t(item.label)}
             </Link>
           )
         })}

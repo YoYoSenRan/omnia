@@ -1,11 +1,3 @@
-/**
- * 常量定义
- *
- * 集中管理前端用到的枚举值、魔法字符串、配置常量。
- *
- * @module lib/constants
- */
-
 /** TanStack Query 缓存 key */
 export const QUERY_KEYS = {
   agents: ['agents'] as const,
