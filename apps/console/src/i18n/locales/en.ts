@@ -9,6 +9,7 @@ export default {
     noData: 'No data',
     empty: '—',
     create: 'Create',
+    toggleTheme: 'Toggle theme',
   },
 
   /* ── Sidebar Navigation ────────────────────────── */
@@ -51,6 +52,7 @@ export default {
     fieldUpdatedAt: 'Updated At',
 
     soul: 'Soul',
+    soulAriaLabel: 'Agent Soul content',
     noSoul: 'No Soul configured for this agent.',
 
     auditLogs: 'Audit Logs',
@@ -97,6 +99,11 @@ export default {
     colName: 'Name / Description',
     colSource: 'Source',
     colUpdatedAt: 'Updated At',
+    sourceLocal: 'Local',
+    sourceConfig: 'Config',
+    sourceGateway: 'Gateway',
+    sourceUser: 'User',
+    sourceSystem: 'System',
   },
 
   /* ── Sessions ──────────────────────────────────── */

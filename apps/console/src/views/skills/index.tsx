@@ -31,6 +31,18 @@ function formatDate(iso: string): string {
  */
 function SkillRow({ skill }: { skill: Skill }) {
   const { t } = useTranslation()
+  const sourceKeyMap: Record<string, string> = {
+    local: 'skills.sourceLocal',
+    config: 'skills.sourceConfig',
+    gateway: 'skills.sourceGateway',
+    user: 'skills.sourceUser',
+    system: 'skills.sourceSystem',
+  }
+
+  const sourceLabel = sourceKeyMap[skill.source]
+    ? t(sourceKeyMap[skill.source])
+    : skill.source
+
   return (
     <div className="flex items-center gap-4 border-b border-border px-4 py-3 last:border-b-0 hover:bg-muted/40 transition-colors">
       {/* 名称 + 描述 — flex-1 占满剩余宽度 */}
@@ -44,7 +56,7 @@ function SkillRow({ skill }: { skill: Skill }) {
 
       {/* 来源标签 — 固定宽度防止压缩 */}
       <span className="shrink-0 inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground font-mono">
-        {skill.source}
+        {sourceLabel}
       </span>
 
       {/* 更新时间 — 右对齐，小屏可隐藏 */}

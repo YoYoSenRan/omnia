@@ -238,7 +238,7 @@ export function AgentDetailView() {
             readOnly
             value={agent.soul}
             rows={12}
-            aria-label="Agent Soul 内容"
+            aria-label={t('agents.soulAriaLabel')}
             className="w-full resize-none rounded-lg border border-border bg-muted p-4 font-mono text-xs text-foreground focus:outline-none"
           />
         ) : (

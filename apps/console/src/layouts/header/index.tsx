@@ -3,7 +3,7 @@ import { SUPPORTED_LANGS, changeLanguage, type LangCode } from '@/i18n'
 import { useThemeStore } from '@/stores/theme'
 
 export function Header() {
-  const { i18n } = useTranslation()
+  const { i18n, t } = useTranslation()
   const { theme, toggleTheme } = useThemeStore()
 
   return (
@@ -29,7 +29,7 @@ export function Header() {
       <button
         onClick={toggleTheme}
         className="flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-        aria-label="Toggle theme"
+        aria-label={t('common.toggleTheme')}
       >
         {theme === 'light' ? (
           /* 太阳图标 */
