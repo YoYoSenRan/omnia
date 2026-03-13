@@ -4,9 +4,9 @@
  * @module db/repo/session
  */
 
-import { eq } from 'drizzle-orm'
-import { db } from '../index.js'
-import { sessions, type SessionInsert, type SessionRow } from '../schema.js'
+import { eq } from "drizzle-orm"
+import { db } from "../index.js"
+import { sessions, type SessionInsert, type SessionRow } from "../schema/index.js"
 
 export const sessionRepo = {
   async findAll(): Promise<SessionRow[]> {
@@ -28,11 +28,7 @@ export const sessionRepo = {
   },
 
   async update(id: string, data: Partial<SessionInsert>): Promise<SessionRow | undefined> {
-    const [row] = await db
-      .update(sessions)
-      .set(data)
-      .where(eq(sessions.id, id))
-      .returning()
+    const [row] = await db.update(sessions).set(data).where(eq(sessions.id, id)).returning()
     return row
   },
 

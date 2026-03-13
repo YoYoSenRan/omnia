@@ -7,8 +7,8 @@
  * @module response
  */
 
-import type { Context } from 'hono'
-import { CODE } from './code.js'
+import type { Context } from "hono"
+import { CODE } from "./code.js"
 
 /**
  * API 响应格式
@@ -42,7 +42,7 @@ export interface ApiResponse<T = unknown> {
  */
 export function ok<T>(c: Context, data: T, status: 200 | 201 = 200) {
   return c.json(
-    { ok: true, code: CODE.SUCCESS, message: 'success', data } satisfies ApiResponse<T>,
+    { ok: true, code: CODE.SUCCESS, message: "success", data } satisfies ApiResponse<T>,
     status,
   )
 }

@@ -6,13 +6,13 @@
  * @module index
  */
 
-import { serve } from '@hono/node-server'
-import { app } from './app.js'
-import { PORT, GATEWAY_URL, GATEWAY_TOKEN } from './utils/env.js'
-import { logger } from './utils/logger.js'
-import { checkConnection, closeDatabase } from './db/index.js'
-import { GatewayClient, setGatewayClient } from './gateway/client.js'
-import { handleGatewayFrame } from './gateway/handler.js'
+import { serve } from "@hono/node-server"
+import { app } from "./app.js"
+import { PORT, GATEWAY_URL, GATEWAY_TOKEN } from "./utils/env.js"
+import { logger } from "./utils/logger.js"
+import { checkConnection, closeDatabase } from "./db/index.js"
+import { GatewayClient, setGatewayClient } from "./gateway/client.js"
+import { handleGatewayFrame } from "./gateway/handler.js"
 
 let gatewayClient: GatewayClient | null = null
 
@@ -20,10 +20,10 @@ async function bootstrap(): Promise<void> {
   /* 1. 验证数据库连接 */
   const dbReady = await checkConnection()
   if (!dbReady) {
-    logger.fatal('Failed to connect to database, aborting startup')
+    logger.fatal("Failed to connect to database, aborting startup")
     process.exit(1)
   }
-  logger.info('Database connection established')
+  logger.info("Database connection established")
 
   /* 2. 启动 HTTP 服务器 */
   const server = serve({
@@ -31,7 +31,7 @@ async function bootstrap(): Promise<void> {
     port: PORT,
   })
 
-  logger.info({ port: PORT }, 'Omnia openclaw service started')
+  logger.info({ port: PORT }, "Omnia openclaw service started")
 
   /* 3. 连接网关（可选） */
   if (GATEWAY_URL) {
@@ -42,17 +42,17 @@ async function bootstrap(): Promise<void> {
     gatewayClient.onMessage(handleGatewayFrame)
     gatewayClient.connect()
     setGatewayClient(gatewayClient)
-    logger.info({ url: GATEWAY_URL }, 'Gateway client initialized')
+    logger.info({ url: GATEWAY_URL }, "Gateway client initialized")
   } else {
-    logger.info('No GATEWAY_URL configured, running in standalone mode')
+    logger.info("No GATEWAY_URL configured, running in standalone mode")
   }
 
   /* 4. 优雅关闭 */
   const shutdown = async (signal: string) => {
-    logger.info({ signal }, 'Shutdown signal received, starting graceful shutdown')
+    logger.info({ signal }, "Shutdown signal received, starting graceful shutdown")
 
     server.close(() => {
-      logger.info('HTTP server closed')
+      logger.info("HTTP server closed")
     })
 
     if (gatewayClient) {
@@ -61,27 +61,27 @@ async function bootstrap(): Promise<void> {
 
     await closeDatabase()
 
-    logger.info('Graceful shutdown completed')
+    logger.info("Graceful shutdown completed")
     process.exit(0)
   }
 
-  process.on('SIGTERM', () => shutdown('SIGTERM'))
-  process.on('SIGINT', () => shutdown('SIGINT'))
+  process.on("SIGTERM", () => shutdown("SIGTERM"))
+  process.on("SIGINT", () => shutdown("SIGINT"))
 }
 
 // ── 进程级错误处理 ────────────────────────────────────────
 
-process.on('unhandledRejection', (reason) => {
-  logger.fatal({ err: reason }, 'Unhandled rejection')
+process.on("unhandledRejection", (reason) => {
+  logger.fatal({ err: reason }, "Unhandled rejection")
   process.exit(1)
 })
 
-process.on('uncaughtException', (err) => {
-  logger.fatal({ err }, 'Uncaught exception')
+process.on("uncaughtException", (err) => {
+  logger.fatal({ err }, "Uncaught exception")
   process.exit(1)
 })
 
 bootstrap().catch((err) => {
-  logger.fatal({ err }, 'Bootstrap failed')
+  logger.fatal({ err }, "Bootstrap failed")
   process.exit(1)
 })

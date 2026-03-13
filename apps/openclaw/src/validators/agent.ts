@@ -1,13 +1,13 @@
-import { z } from 'zod'
+import { z } from "zod"
 
 export const AgentCreateSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
   emoji: z.string().nullish(),
-  role: z.enum(['agent', 'coordinator', 'reviewer']).nullish(),
+  role: z.enum(["agent", "coordinator", "reviewer"]).nullish(),
   model: z.string().nullish(),
   workspace: z.string().nullish(),
-  source: z.enum(['gateway', 'local', 'config']).optional(),
+  source: z.enum(["gateway", "local", "config"]).optional(),
   sourceRef: z.string().nullish(),
   soul: z.string().nullish(),
   config: z.unknown().optional(),
@@ -16,10 +16,10 @@ export const AgentCreateSchema = z.object({
 export const AgentUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   emoji: z.string().nullable().optional(),
-  role: z.enum(['agent', 'coordinator', 'reviewer']).nullable().optional(),
+  role: z.enum(["agent", "coordinator", "reviewer"]).nullable().optional(),
   model: z.string().nullable().optional(),
   workspace: z.string().nullable().optional(),
-  status: z.enum(['idle', 'busy', 'error', 'offline']).optional(),
+  status: z.enum(["idle", "busy", "error", "offline"]).optional(),
   soul: z.string().nullable().optional(),
   config: z.unknown().optional(),
 })

@@ -7,11 +7,11 @@
  * @module db
  */
 
-import pg from 'pg'
-import { drizzle } from 'drizzle-orm/node-postgres'
-import { DATABASE_URL } from '../utils/env.js'
-import { dbLogger } from '../utils/logger.js'
-import * as schema from './schema.js'
+import pg from "pg"
+import { drizzle } from "drizzle-orm/node-postgres"
+import { DATABASE_URL } from "../utils/env.js"
+import { dbLogger } from "../utils/logger.js"
+import * as schema from "./schema/index.js"
 
 const { Pool } = pg
 
@@ -23,8 +23,8 @@ const pool = new Pool({
 })
 
 /* 监听连接池错误，避免未处理异常导致进程崩溃 */
-pool.on('error', (err) => {
-  dbLogger.error({ err }, 'Unexpected database pool error')
+pool.on("error", (err) => {
+  dbLogger.error({ err }, "Unexpected database pool error")
 })
 
 /** Drizzle ORM 实例（携带 schema 类型推断） */
@@ -38,11 +38,11 @@ export const db = drizzle(pool, { schema })
 export async function checkConnection(): Promise<boolean> {
   try {
     const client = await pool.connect()
-    await client.query('SELECT 1')
+    await client.query("SELECT 1")
     client.release()
     return true
   } catch (err) {
-    dbLogger.error({ err }, 'Database health check failed')
+    dbLogger.error({ err }, "Database health check failed")
     return false
   }
 }
@@ -53,7 +53,7 @@ export async function checkConnection(): Promise<boolean> {
  * 在优雅关闭流程中调用，等待所有活跃连接释放。
  */
 export async function closeDatabase(): Promise<void> {
-  dbLogger.info('Closing database connection pool')
+  dbLogger.info("Closing database connection pool")
   await pool.end()
-  dbLogger.info('Database connection pool closed')
+  dbLogger.info("Database connection pool closed")
 }

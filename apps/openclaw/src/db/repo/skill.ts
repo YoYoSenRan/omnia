@@ -4,9 +4,9 @@
  * @module db/repo/skill
  */
 
-import { eq } from 'drizzle-orm'
-import { db } from '../index.js'
-import { skills, type SkillInsert, type SkillRow } from '../schema.js'
+import { eq } from "drizzle-orm"
+import { db } from "../index.js"
+import { skills, type SkillInsert, type SkillRow } from "../schema/index.js"
 
 export const skillRepo = {
   async findAll(): Promise<SkillRow[]> {

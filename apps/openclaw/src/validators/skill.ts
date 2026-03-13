@@ -1,10 +1,10 @@
-import { z } from 'zod'
+import { z } from "zod"
 
 export const SkillCreateSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
   description: z.string().nullish(),
-  source: z.enum(['local', 'registry']).optional(),
+  source: z.enum(["local", "registry"]).optional(),
   sourceRef: z.string().nullish(),
   contentHash: z.string().nullish(),
 })

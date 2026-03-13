@@ -9,8 +9,8 @@
  * @module events/bus
  */
 
-import { EventEmitter } from 'node:events'
-import { eventLogger } from '../utils/logger.js'
+import { EventEmitter } from "node:events"
+import { eventLogger } from "../utils/logger.js"
 
 /** 事件负载基础类型 */
 export interface EventPayload {
@@ -42,6 +42,6 @@ export function emitEvent(event: string, payload: Record<string, unknown>): void
     ...payload,
     timestamp: new Date().toISOString(),
   }
-  eventLogger.debug({ event, payload: data }, 'Event emitted')
+  eventLogger.debug({ event, payload: data }, "Event emitted")
   eventBus.emit(event, data)
 }

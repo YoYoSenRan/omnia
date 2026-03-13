@@ -4,10 +4,10 @@
  * @module controllers/skill
  */
 
-import type { Context } from 'hono'
-import { skillService } from '../services/skill.js'
-import { ok } from '../http/response.js'
-import { SkillCreateSchema, SkillUpdateSchema } from '../schemas/skill.js'
+import type { Context } from "hono"
+import { skillService } from "../services/skill.js"
+import { ok } from "../http/response.js"
+import { SkillCreateSchema, SkillUpdateSchema } from "../validators/skill.js"
 
 export const skillController = {
   list: async (c: Context) => {
@@ -16,7 +16,7 @@ export const skillController = {
   },
 
   getById: async (c: Context) => {
-    const skill = await skillService.getById(c.req.param('id')!)
+    const skill = await skillService.getById(c.req.param("id")!)
     return ok(c, skill)
   },
 
@@ -28,7 +28,7 @@ export const skillController = {
 
   update: async (c: Context) => {
     const body = SkillUpdateSchema.parse(await c.req.json())
-    const skill = await skillService.update(c.req.param('id')!, body)
+    const skill = await skillService.update(c.req.param("id")!, body)
     return ok(c, skill)
   },
 

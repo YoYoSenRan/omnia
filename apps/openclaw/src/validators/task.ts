@@ -1,6 +1,14 @@
-import { z } from 'zod'
+import { z } from "zod"
 
-const TASK_STATUSES = ['inbox', 'assigned', 'in_progress', 'review', 'done', 'failed', 'cancelled'] as const
+const TASK_STATUSES = [
+  "inbox",
+  "assigned",
+  "in_progress",
+  "review",
+  "done",
+  "failed",
+  "cancelled",
+] as const
 
 export const TaskCreateSchema = z.object({
   id: z.string().optional(),

@@ -4,34 +4,34 @@
  * @module services/task
  */
 
-import { taskRepo } from '../db/repo/task.js'
-import { emitEvent } from '../events/bus.js'
-import { AppError } from '../http/errors.js'
-import { CODE } from '../http/code.js'
-import { generateId } from '../utils/id.js'
-import { logger } from '../utils/logger.js'
-import { BaseService } from './base.js'
-import type { TaskInsert, TaskRow } from '../db/schema.js'
-import type { TaskCreateInput, TaskUpdateInput } from '../schemas/task.js'
+import { taskRepo } from "../db/repo/task.js"
+import { emitEvent } from "../events/bus.js"
+import { AppError } from "../http/errors.js"
+import { CODE } from "../http/code.js"
+import { generateId } from "../utils/id.js"
+import { logger } from "../utils/logger.js"
+import { BaseService } from "./base.js"
+import type { TaskInsert, TaskRow } from "../db/schema/index.js"
+import type { TaskCreateInput, TaskUpdateInput } from "../validators/task.js"
 
 /** 合法的状态流转 */
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  inbox: ['assigned', 'cancelled'],
-  assigned: ['in_progress', 'cancelled'],
-  in_progress: ['review', 'done', 'failed', 'cancelled'],
-  review: ['done', 'in_progress', 'failed'],
+  inbox: ["assigned", "cancelled"],
+  assigned: ["in_progress", "cancelled"],
+  in_progress: ["review", "done", "failed", "cancelled"],
+  review: ["done", "in_progress", "failed"],
   done: [],
-  failed: ['inbox'],
-  cancelled: ['inbox'],
+  failed: ["inbox"],
+  cancelled: ["inbox"],
 }
 
 class TaskService extends BaseService<TaskRow, TaskInsert, TaskCreateInput, TaskUpdateInput> {
   constructor() {
     super({
-      entity: 'task',
+      entity: "task",
       notFoundCode: CODE.TASK_NOT_FOUND,
       repo: taskRepo,
-      logger: logger.child({ module: 'task' }),
+      logger: logger.child({ module: "task" }),
     })
   }
 
@@ -41,7 +41,7 @@ class TaskService extends BaseService<TaskRow, TaskInsert, TaskCreateInput, Task
       id: data.id ?? generateId(),
       title: data.title,
       description: data.description ?? null,
-      status: data.assignedTo ? 'assigned' : 'inbox',
+      status: data.assignedTo ? "assigned" : "inbox",
       priority: data.priority ?? 3,
       assignedTo: data.assignedTo ?? null,
       parentId: data.parentId ?? null,
@@ -51,7 +51,7 @@ class TaskService extends BaseService<TaskRow, TaskInsert, TaskCreateInput, Task
     }
   }
 
-  async update(id: string, data: TaskUpdateInput, source: string = 'user'): Promise<TaskRow> {
+  async update(id: string, data: TaskUpdateInput, source: string = "user"): Promise<TaskRow> {
     const existing = await this.getById(id)
 
     // 状态变更校验
@@ -68,7 +68,7 @@ class TaskService extends BaseService<TaskRow, TaskInsert, TaskCreateInput, Task
 
     // 完成时记录完成时间
     const updates: Partial<TaskInsert> = { ...data }
-    if (data.status === 'done' || data.status === 'failed') {
+    if (data.status === "done" || data.status === "failed") {
       updates.completedAt = new Date()
     }
 
@@ -78,21 +78,21 @@ class TaskService extends BaseService<TaskRow, TaskInsert, TaskCreateInput, Task
       throw new AppError(500, CODE.INTERNAL_ERROR, `Failed to update task '${id}'`)
     }
 
-    const { activityRepo } = await import('../db/repo/activity.js')
-    await activityRepo.log('task', id, 'updated', source, this.updateDetail(data))
-    this.logger.info({ taskId: id, status: data.status }, 'Task updated')
+    const { activityRepo } = await import("../db/repo/activity.js")
+    await activityRepo.log("task", id, "updated", source, this.updateDetail(data))
+    this.logger.info({ taskId: id, status: data.status }, "Task updated")
 
-    if (data.status === 'done') {
-      emitEvent('task.completed', { taskId: id })
+    if (data.status === "done") {
+      emitEvent("task.completed", { taskId: id })
     } else if (data.status) {
-      emitEvent('task.updated', { taskId: id, status: data.status })
+      emitEvent("task.updated", { taskId: id, status: data.status })
     }
 
     return updated
   }
 
   protected afterCreate(row: TaskRow, data: TaskCreateInput): void {
-    emitEvent('task.created', { taskId: row.id, title: data.title })
+    emitEvent("task.created", { taskId: row.id, title: data.title })
   }
 
   protected createDetail(data: TaskCreateInput): Record<string, unknown> {
@@ -106,15 +106,15 @@ class TaskService extends BaseService<TaskRow, TaskInsert, TaskCreateInput, Task
   // ── 独有方法 ─────────────────────────────────────────
 
   async assign(taskId: string, agentId: string): Promise<TaskRow> {
-    return this.update(taskId, { assignedTo: agentId, status: 'assigned' })
+    return this.update(taskId, { assignedTo: agentId, status: "assigned" })
   }
 
   async complete(taskId: string, result?: string): Promise<TaskRow> {
-    return this.update(taskId, { status: 'done', result: result ?? null })
+    return this.update(taskId, { status: "done", result: result ?? null })
   }
 
   async fail(taskId: string, error?: string): Promise<TaskRow> {
-    return this.update(taskId, { status: 'failed', result: error ?? null })
+    return this.update(taskId, { status: "failed", result: error ?? null })
   }
 }
 

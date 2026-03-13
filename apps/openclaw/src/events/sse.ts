@@ -7,21 +7,21 @@
  * @module events/sse
  */
 
-import type { Context } from 'hono'
-import { streamSSE } from 'hono/streaming'
-import { eventBus } from './bus.js'
-import { eventLogger } from '../utils/logger.js'
+import type { Context } from "hono"
+import { streamSSE } from "hono/streaming"
+import { eventBus } from "./bus.js"
+import { eventLogger } from "../utils/logger.js"
 
 /** 需要推送给 SSE 客户端的事件列表 */
 const SSE_EVENTS = [
-  'connection',
-  'agent.synced',
-  'agent.status',
-  'task.created',
-  'task.updated',
-  'task.completed',
-  'session.created',
-  'session.message',
+  "connection",
+  "agent.synced",
+  "agent.status",
+  "task.created",
+  "task.updated",
+  "task.completed",
+  "session.created",
+  "session.message",
 ] as const
 
 /**
@@ -45,7 +45,7 @@ const SSE_EVENTS = [
  */
 export function handleSSE(c: Context) {
   return streamSSE(c, async (stream) => {
-    eventLogger.info('SSE client connected')
+    eventLogger.info("SSE client connected")
 
     /** 事件监听器映射，用于断开时清理 */
     const listeners = new Map<string, (data: unknown) => void>()
@@ -53,11 +53,9 @@ export function handleSSE(c: Context) {
     /* 为每个事件类型注册监听器 */
     for (const event of SSE_EVENTS) {
       const listener = (data: unknown) => {
-        stream
-          .writeSSE({ event, data: JSON.stringify(data) })
-          .catch(() => {
-            /* 写入失败说明连接已断开，静默忽略 */
-          })
+        stream.writeSSE({ event, data: JSON.stringify(data) }).catch(() => {
+          /* 写入失败说明连接已断开，静默忽略 */
+        })
       }
       listeners.set(event, listener)
       eventBus.on(event, listener)
@@ -65,13 +63,13 @@ export function handleSSE(c: Context) {
 
     /* 发送初始连接确认事件 */
     await stream.writeSSE({
-      event: 'connected',
+      event: "connected",
       data: JSON.stringify({ timestamp: new Date().toISOString() }),
     })
 
     /* 等待流关闭（客户端断开或服务端主动关闭） */
     stream.onAbort(() => {
-      eventLogger.info('SSE client disconnected')
+      eventLogger.info("SSE client disconnected")
       /* 清理所有事件监听器，防止内存泄漏 */
       for (const [event, listener] of listeners) {
         eventBus.off(event, listener)

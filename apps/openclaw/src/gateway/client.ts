@@ -6,17 +6,12 @@
  * @module gateway/client
  */
 
-import WebSocket from 'ws'
-import { gwLogger } from '../utils/logger.js'
-import { generateId } from '../utils/id.js'
-import {
-  type GatewayFrame,
-  type HandshakePayload,
-  encodeFrame,
-  decodeFrame,
-} from './protocol.js'
+import WebSocket from "ws"
+import { gwLogger } from "../utils/logger.js"
+import { generateId } from "../utils/id.js"
+import { type GatewayFrame, type HandshakePayload, encodeFrame, decodeFrame } from "./protocol.js"
 
-export type GatewayStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
+export type GatewayStatus = "disconnected" | "connecting" | "connected" | "error"
 
 export interface GatewayClientOptions {
   url: string
@@ -44,16 +39,19 @@ export function setGatewayClient(client: GatewayClient | null): void {
 
 export class GatewayClient {
   private ws: WebSocket | null = null
-  private _status: GatewayStatus = 'disconnected'
+  private _status: GatewayStatus = "disconnected"
   private retryCount = 0
   private retryTimer: ReturnType<typeof setTimeout> | null = null
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
   private missedPongs = 0
-  private pendingRequests = new Map<string, {
-    resolve: (result: unknown) => void
-    reject: (err: Error) => void
-    timer: ReturnType<typeof setTimeout>
-  }>()
+  private pendingRequests = new Map<
+    string,
+    {
+      resolve: (result: unknown) => void
+      reject: (err: Error) => void
+      timer: ReturnType<typeof setTimeout>
+    }
+  >()
   private messageHandler: MessageHandler | null = null
 
   private readonly url: string
@@ -64,7 +62,7 @@ export class GatewayClient {
 
   constructor(options: GatewayClientOptions) {
     this.url = options.url
-    this.token = options.token ?? ''
+    this.token = options.token ?? ""
     this.maxRetries = options.maxRetries ?? 10
     this.heartbeatInterval = options.heartbeatInterval ?? 30_000
     this.requestTimeout = options.requestTimeout ?? 10_000
@@ -75,7 +73,7 @@ export class GatewayClient {
   }
 
   get connected(): boolean {
-    return this._status === 'connected'
+    return this._status === "connected"
   }
 
   onMessage(handler: MessageHandler): void {
@@ -86,53 +84,53 @@ export class GatewayClient {
    * 建立连接
    */
   connect(): void {
-    if (this._status === 'connecting' || this._status === 'connected') return
+    if (this._status === "connecting" || this._status === "connected") return
     if (!this.url) {
-      gwLogger.info('No gateway URL configured, skipping connection')
+      gwLogger.info("No gateway URL configured, skipping connection")
       return
     }
 
-    this._status = 'connecting'
-    gwLogger.info({ url: this.url }, 'Connecting to gateway')
+    this._status = "connecting"
+    gwLogger.info({ url: this.url }, "Connecting to gateway")
 
     try {
       this.ws = new WebSocket(this.url)
     } catch (err) {
-      gwLogger.error({ err }, 'Failed to create WebSocket')
-      this._status = 'error'
+      gwLogger.error({ err }, "Failed to create WebSocket")
+      this._status = "error"
       this.scheduleReconnect()
       return
     }
 
-    this.ws.on('open', () => {
-      gwLogger.info('WebSocket connected, sending handshake')
-      this._status = 'connected'
+    this.ws.on("open", () => {
+      gwLogger.info("WebSocket connected, sending handshake")
+      this._status = "connected"
       this.retryCount = 0
       this.missedPongs = 0
 
       // 发送握手
       const handshake: HandshakePayload = {
-        protocol: 'v3',
-        client: 'omnia-openclaw',
-        mode: 'server',
+        protocol: "v3",
+        client: "omnia-openclaw",
+        mode: "server",
         token: this.token || undefined,
       }
-      this.send({ type: 'event', event: 'handshake', payload: handshake })
+      this.send({ type: "event", event: "handshake", payload: handshake })
 
       // 启动心跳
       this.startHeartbeat()
     })
 
-    this.ws.on('message', (data) => {
+    this.ws.on("message", (data) => {
       const raw = data.toString()
       const frame = decodeFrame(raw)
       if (!frame) {
-        gwLogger.warn({ raw: raw.slice(0, 200) }, 'Invalid frame received')
+        gwLogger.warn({ raw: raw.slice(0, 200) }, "Invalid frame received")
         return
       }
 
       // 处理 RPC 响应
-      if (frame.type === 'res' && frame.id) {
+      if (frame.type === "res" && frame.id) {
         const pending = this.pendingRequests.get(frame.id)
         if (pending) {
           clearTimeout(pending.timer)
@@ -140,14 +138,14 @@ export class GatewayClient {
           if (frame.ok) {
             pending.resolve(frame.result)
           } else {
-            pending.reject(new Error(frame.error?.message ?? 'RPC failed'))
+            pending.reject(new Error(frame.error?.message ?? "RPC failed"))
           }
         }
         return
       }
 
       // 处理 pong
-      if (frame.type === 'event' && frame.event === 'pong') {
+      if (frame.type === "event" && frame.event === "pong") {
         this.missedPongs = 0
         return
       }
@@ -158,16 +156,16 @@ export class GatewayClient {
       }
     })
 
-    this.ws.on('close', (code, reason) => {
-      gwLogger.info({ code, reason: reason.toString() }, 'WebSocket closed')
+    this.ws.on("close", (code, reason) => {
+      gwLogger.info({ code, reason: reason.toString() }, "WebSocket closed")
       this.cleanup()
-      this._status = 'disconnected'
+      this._status = "disconnected"
       this.scheduleReconnect()
     })
 
-    this.ws.on('error', (err) => {
-      gwLogger.error({ err }, 'WebSocket error')
-      this._status = 'error'
+    this.ws.on("error", (err) => {
+      gwLogger.error({ err }, "WebSocket error")
+      this._status = "error"
     })
   }
 
@@ -178,11 +176,11 @@ export class GatewayClient {
     this.retryCount = this.maxRetries // 阻止重连
     this.cleanup()
     if (this.ws) {
-      this.ws.close(1000, 'Client disconnect')
+      this.ws.close(1000, "Client disconnect")
       this.ws = null
     }
-    this._status = 'disconnected'
-    gwLogger.info('Gateway client disconnected')
+    this._status = "disconnected"
+    gwLogger.info("Gateway client disconnected")
   }
 
   /**
@@ -209,7 +207,7 @@ export class GatewayClient {
       this.pendingRequests.set(id, { resolve, reject, timer })
 
       const sent = this.send({
-        type: 'req',
+        type: "req",
         method,
         id,
         payload: params,
@@ -218,7 +216,7 @@ export class GatewayClient {
       if (!sent) {
         clearTimeout(timer)
         this.pendingRequests.delete(id)
-        reject(new Error('Gateway not connected'))
+        reject(new Error("Gateway not connected"))
       }
     })
   }
@@ -227,12 +225,12 @@ export class GatewayClient {
     this.stopHeartbeat()
     this.heartbeatTimer = setInterval(() => {
       if (this.missedPongs >= 3) {
-        gwLogger.warn('3 missed pongs, reconnecting')
-        this.ws?.close(4001, 'Heartbeat timeout')
+        gwLogger.warn("3 missed pongs, reconnecting")
+        this.ws?.close(4001, "Heartbeat timeout")
         return
       }
       this.missedPongs++
-      this.send({ type: 'event', event: 'ping' })
+      this.send({ type: "event", event: "ping" })
     }, this.heartbeatInterval)
   }
 
@@ -245,8 +243,8 @@ export class GatewayClient {
 
   private scheduleReconnect(): void {
     if (this.retryCount >= this.maxRetries) {
-      gwLogger.error({ retries: this.retryCount }, 'Max reconnect attempts reached')
-      this._status = 'error'
+      gwLogger.error({ retries: this.retryCount }, "Max reconnect attempts reached")
+      this._status = "error"
       return
     }
 
@@ -254,7 +252,7 @@ export class GatewayClient {
     const delay = Math.min(1000 * Math.pow(1.7, this.retryCount), 15_000)
     this.retryCount++
 
-    gwLogger.info({ attempt: this.retryCount, delay }, 'Scheduling reconnect')
+    gwLogger.info({ attempt: this.retryCount, delay }, "Scheduling reconnect")
     this.retryTimer = setTimeout(() => {
       this.retryTimer = null
       this.connect()
@@ -270,7 +268,7 @@ export class GatewayClient {
     // 拒绝所有 pending 请求
     for (const [id, pending] of this.pendingRequests) {
       clearTimeout(pending.timer)
-      pending.reject(new Error('Connection closed'))
+      pending.reject(new Error("Connection closed"))
       this.pendingRequests.delete(id)
     }
   }

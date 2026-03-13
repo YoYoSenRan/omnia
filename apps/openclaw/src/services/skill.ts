@@ -4,21 +4,21 @@
  * @module services/skill
  */
 
-import { skillRepo } from '../db/repo/skill.js'
-import { CODE } from '../http/code.js'
-import { generateId } from '../utils/id.js'
-import { logger } from '../utils/logger.js'
-import { BaseService } from './base.js'
-import type { SkillInsert, SkillRow } from '../db/schema.js'
-import type { SkillCreateInput, SkillUpdateInput } from '../schemas/skill.js'
+import { skillRepo } from "../db/repo/skill.js"
+import { CODE } from "../http/code.js"
+import { generateId } from "../utils/id.js"
+import { logger } from "../utils/logger.js"
+import { BaseService } from "./base.js"
+import type { SkillInsert, SkillRow } from "../db/schema/index.js"
+import type { SkillCreateInput, SkillUpdateInput } from "../validators/skill.js"
 
 class SkillService extends BaseService<SkillRow, SkillInsert, SkillCreateInput, SkillUpdateInput> {
   constructor() {
     super({
-      entity: 'skill',
+      entity: "skill",
       notFoundCode: CODE.SKILL_NOT_FOUND,
       repo: skillRepo,
-      logger: logger.child({ module: 'skill' }),
+      logger: logger.child({ module: "skill" }),
     })
   }
 
@@ -28,7 +28,7 @@ class SkillService extends BaseService<SkillRow, SkillInsert, SkillCreateInput, 
       id: data.id ?? generateId(),
       name: data.name,
       description: data.description ?? null,
-      source: data.source ?? 'local',
+      source: data.source ?? "local",
       sourceRef: data.sourceRef ?? null,
       contentHash: data.contentHash ?? null,
       createdAt: now,

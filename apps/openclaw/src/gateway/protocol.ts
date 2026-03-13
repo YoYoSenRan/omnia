@@ -6,7 +6,7 @@
 
 /** 网关消息帧 */
 export interface GatewayFrame {
-  type: 'event' | 'req' | 'res'
+  type: "event" | "req" | "res"
   /** 事件名（type=event 时） */
   event?: string
   /** RPC 方法名（type=req 时） */
@@ -27,19 +27,19 @@ export interface GatewayFrame {
 
 /** 网关事件类型 */
 export type GatewayEventType =
-  | 'tick'
-  | 'agent.status'
-  | 'task.created'
-  | 'task.updated'
-  | 'session.created'
-  | 'session.message'
-  | 'log'
+  | "tick"
+  | "agent.status"
+  | "task.created"
+  | "task.updated"
+  | "session.created"
+  | "session.message"
+  | "log"
 
 /** 握手消息 */
 export interface HandshakePayload {
-  protocol: 'v3'
-  client: 'omnia-openclaw'
-  mode: 'server'
+  protocol: "v3"
+  client: "omnia-openclaw"
+  mode: "server"
   token?: string
 }
 

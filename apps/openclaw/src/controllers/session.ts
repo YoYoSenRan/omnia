@@ -4,10 +4,10 @@
  * @module controllers/session
  */
 
-import type { Context } from 'hono'
-import { sessionService } from '../services/session.js'
-import { ok } from '../http/response.js'
-import { SessionCreateSchema } from '../schemas/session.js'
+import type { Context } from "hono"
+import { sessionService } from "../services/session.js"
+import { ok } from "../http/response.js"
+import { SessionCreateSchema } from "../validators/session.js"
 
 export const sessionController = {
   list: async (c: Context) => {
@@ -16,7 +16,7 @@ export const sessionController = {
   },
 
   getById: async (c: Context) => {
-    const session = await sessionService.getById(c.req.param('id')!)
+    const session = await sessionService.getById(c.req.param("id")!)
     return ok(c, session)
   },
 
@@ -29,12 +29,12 @@ export const sessionController = {
   /** 开放路由创建（source = system） */
   createFromOpen: async (c: Context) => {
     const body = SessionCreateSchema.parse(await c.req.json())
-    const session = await sessionService.create(body, 'system')
+    const session = await sessionService.create(body, "system")
     return ok(c, session, 201)
   },
 
   close: async (c: Context) => {
-    const session = await sessionService.close(c.req.param('id')!)
+    const session = await sessionService.close(c.req.param("id")!)
     return ok(c, session)
   },
 }

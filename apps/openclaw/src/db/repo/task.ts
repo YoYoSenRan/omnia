@@ -4,9 +4,9 @@
  * @module db/repo/task
  */
 
-import { eq } from 'drizzle-orm'
-import { db } from '../index.js'
-import { tasks, type TaskInsert, type TaskRow } from '../schema.js'
+import { eq } from "drizzle-orm"
+import { db } from "../index.js"
+import { tasks, type TaskInsert, type TaskRow } from "../schema/index.js"
 
 export const taskRepo = {
   async findAll(): Promise<TaskRow[]> {

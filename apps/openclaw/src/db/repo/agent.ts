@@ -4,9 +4,9 @@
  * @module db/repo/agent
  */
 
-import { eq } from 'drizzle-orm'
-import { db } from '../index.js'
-import { agents, type AgentInsert, type AgentRow } from '../schema.js'
+import { eq } from "drizzle-orm"
+import { db } from "../index.js"
+import { agents, type AgentInsert, type AgentRow } from "../schema/index.js"
 
 export const agentRepo = {
   async findAll(): Promise<AgentRow[]> {

@@ -4,9 +4,9 @@
  * @module db/repo/activity
  */
 
-import { eq, and, desc } from 'drizzle-orm'
-import { db } from '../index.js'
-import { activities, type ActivityInsert, type ActivityRow } from '../schema.js'
+import { eq, and, desc } from "drizzle-orm"
+import { db } from "../index.js"
+import { activities, type ActivityInsert, type ActivityRow } from "../schema/index.js"
 
 export const activityRepo = {
   async findByEntity(entityType: string, entityId: string, limit = 50): Promise<ActivityRow[]> {
@@ -19,14 +19,10 @@ export const activityRepo = {
   },
 
   async findRecent(limit = 50): Promise<ActivityRow[]> {
-    return db
-      .select()
-      .from(activities)
-      .orderBy(desc(activities.createdAt))
-      .limit(limit)
+    return db.select().from(activities).orderBy(desc(activities.createdAt)).limit(limit)
   },
 
-  async create(data: Omit<ActivityInsert, 'id' | 'createdAt'>): Promise<ActivityRow> {
+  async create(data: Omit<ActivityInsert, "id" | "createdAt">): Promise<ActivityRow> {
     const [row] = await db.insert(activities).values(data).returning()
     return row
   },
