@@ -1,49 +1,24 @@
 /**
- * Session 路由（薄壳）
+ * Session 路由映射
  *
  * @module routes/sessions
  */
 
 import { Hono } from 'hono'
-import { sessionService } from '../services/session.js'
-import { ok } from '../http/response.js'
+import { sessionController as ctrl } from '../controllers/session.js'
 
-// ── 内部路由（/api/sessions） ────────────────────────────
+// ── /api/sessions ────────────────────────────────────────
 
 export const sessionRoutes = new Hono()
 
-sessionRoutes.get('/', async (c) => {
-  const sessions = await sessionService.list()
-  return ok(c, sessions)
-})
+sessionRoutes.get('/', ctrl.list)
+sessionRoutes.get('/:id', ctrl.getById)
+sessionRoutes.post('/', ctrl.create)
+sessionRoutes.put('/:id/close', ctrl.close)
 
-sessionRoutes.get('/:id', async (c) => {
-  const session = await sessionService.getById(c.req.param('id'))
-  return ok(c, session)
-})
-
-sessionRoutes.post('/', async (c) => {
-  const body = await c.req.json()
-  const session = await sessionService.create(body)
-  return ok(c, session, 201)
-})
-
-sessionRoutes.put('/:id/close', async (c) => {
-  const session = await sessionService.close(c.req.param('id'))
-  return ok(c, session)
-})
-
-// ── 开放路由（/open/sessions） ───────────────────────────
+// ── /open/sessions ───────────────────────────────────────
 
 export const sessionOpenRoutes = new Hono()
 
-sessionOpenRoutes.get('/', async (c) => {
-  const sessions = await sessionService.list()
-  return ok(c, sessions)
-})
-
-sessionOpenRoutes.post('/', async (c) => {
-  const body = await c.req.json()
-  const session = await sessionService.create(body, 'system')
-  return ok(c, session, 201)
-})
+sessionOpenRoutes.get('/', ctrl.list)
+sessionOpenRoutes.post('/', ctrl.createFromOpen)

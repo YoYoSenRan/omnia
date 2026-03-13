@@ -10,6 +10,11 @@ export default {
     empty: "—",
     create: "Create",
     toggleTheme: "Toggle theme",
+    languageMenu: "Language menu",
+    themeMenu: "Theme menu",
+    themeSystem: "System",
+    themeLight: "Light",
+    themeDark: "Dark",
   },
 
   /* ── Sidebar Navigation ────────────────────────── */

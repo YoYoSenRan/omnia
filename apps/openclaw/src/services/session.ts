@@ -5,55 +5,56 @@
  */
 
 import { sessionRepo } from '../db/repo/session.js'
-import { activityRepo } from '../db/repo/activity.js'
 import { agentRepo } from '../db/repo/agent.js'
+import { activityRepo } from '../db/repo/activity.js'
 import { emitEvent } from '../events/bus.js'
 import { AppError } from '../http/errors.js'
 import { CODE } from '../http/code.js'
 import { generateId } from '../utils/id.js'
 import { logger } from '../utils/logger.js'
-import type { SessionRow } from '../db/schema.js'
+import { BaseService } from './base.js'
+import type { SessionInsert, SessionRow } from '../db/schema.js'
+import type { SessionCreateInput } from '../schemas/session.js'
 
-export const sessionService = {
-  async list(): Promise<SessionRow[]> {
-    return sessionRepo.findAll()
-  },
+class SessionService extends BaseService<SessionRow, SessionInsert, SessionCreateInput, never> {
+  constructor() {
+    super({
+      entity: 'session',
+      notFoundCode: CODE.SESSION_NOT_FOUND,
+      repo: sessionRepo,
+      logger: logger.child({ module: 'session' }),
+    })
+  }
 
-  async getById(id: string): Promise<SessionRow> {
-    const session = await sessionRepo.findById(id)
-    if (!session) {
-      throw new AppError(404, CODE.SESSION_NOT_FOUND, `Session '${id}' not found`)
+  protected toInsert(data: SessionCreateInput): SessionInsert {
+    return {
+      id: data.id ?? generateId(),
+      agentId: data.agentId,
+      status: 'open',
+      metadata: data.metadata ?? null,
+      createdAt: new Date(),
     }
-    return session
-  },
+  }
 
-  async create(data: {
-    id?: string
-    agentId: string
-    metadata?: unknown
-  }, source: string = 'user'): Promise<SessionRow> {
+  async create(data: SessionCreateInput, source: string = 'user'): Promise<SessionRow> {
     // 验证关联的 Agent 存在
     const agent = await agentRepo.findById(data.agentId)
     if (!agent) {
       throw new AppError(404, CODE.AGENT_NOT_FOUND, `Agent '${data.agentId}' not found`)
     }
 
-    const id = data.id ?? generateId()
+    return super.create(data, source)
+  }
 
-    const session = await sessionRepo.create({
-      id,
-      agentId: data.agentId,
-      status: 'open',
-      metadata: data.metadata ?? null,
-      createdAt: new Date(),
-    })
+  protected afterCreate(row: SessionRow, data: SessionCreateInput): void {
+    emitEvent('session.created', { sessionId: row.id, agentId: data.agentId })
+  }
 
-    await activityRepo.log('session', id, 'created', source, { agentId: data.agentId })
-    logger.info({ sessionId: id, agentId: data.agentId }, 'Session created')
-    emitEvent('session.created', { sessionId: id, agentId: data.agentId })
+  protected createDetail(data: SessionCreateInput): Record<string, unknown> {
+    return { agentId: data.agentId }
+  }
 
-    return session
-  },
+  // ── 独有方法 ─────────────────────────────────────────
 
   async close(id: string): Promise<SessionRow> {
     const existing = await this.getById(id)
@@ -71,8 +72,10 @@ export const sessionService = {
     }
 
     await activityRepo.log('session', id, 'updated', 'user', { status: 'closed' })
-    logger.info({ sessionId: id }, 'Session closed')
+    this.logger.info({ sessionId: id }, 'Session closed')
 
     return updated
-  },
+  }
 }
+
+export const sessionService = new SessionService()

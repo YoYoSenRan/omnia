@@ -5,13 +5,14 @@
  */
 
 import { taskRepo } from '../db/repo/task.js'
-import { activityRepo } from '../db/repo/activity.js'
 import { emitEvent } from '../events/bus.js'
 import { AppError } from '../http/errors.js'
 import { CODE } from '../http/code.js'
 import { generateId } from '../utils/id.js'
 import { logger } from '../utils/logger.js'
+import { BaseService } from './base.js'
 import type { TaskInsert, TaskRow } from '../db/schema.js'
+import type { TaskCreateInput, TaskUpdateInput } from '../schemas/task.js'
 
 /** 合法的状态流转 */
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -24,33 +25,20 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   cancelled: ['inbox'],
 }
 
-export const taskService = {
-  async list(): Promise<TaskRow[]> {
-    return taskRepo.findAll()
-  },
+class TaskService extends BaseService<TaskRow, TaskInsert, TaskCreateInput, TaskUpdateInput> {
+  constructor() {
+    super({
+      entity: 'task',
+      notFoundCode: CODE.TASK_NOT_FOUND,
+      repo: taskRepo,
+      logger: logger.child({ module: 'task' }),
+    })
+  }
 
-  async getById(id: string): Promise<TaskRow> {
-    const task = await taskRepo.findById(id)
-    if (!task) {
-      throw new AppError(404, CODE.TASK_NOT_FOUND, `Task '${id}' not found`)
-    }
-    return task
-  },
-
-  async create(data: {
-    id?: string
-    title: string
-    description?: string | null
-    priority?: number
-    assignedTo?: string | null
-    parentId?: string | null
-    tags?: string[] | null
-  }, source: string = 'user'): Promise<TaskRow> {
-    const id = data.id ?? generateId()
+  protected toInsert(data: TaskCreateInput): TaskInsert {
     const now = new Date()
-
-    const insert: TaskInsert = {
-      id,
+    return {
+      id: data.id ?? generateId(),
       title: data.title,
       description: data.description ?? null,
       status: data.assignedTo ? 'assigned' : 'inbox',
@@ -61,28 +49,12 @@ export const taskService = {
       createdAt: now,
       updatedAt: now,
     }
+  }
 
-    const task = await taskRepo.create(insert)
-
-    await activityRepo.log('task', id, 'created', source, { title: data.title, assignedTo: insert.assignedTo })
-    logger.info({ taskId: id, title: data.title }, 'Task created')
-    emitEvent('task.created', { taskId: id, title: data.title })
-
-    return task
-  },
-
-  async update(id: string, data: Partial<{
-    title: string
-    description: string | null
-    status: string
-    priority: number
-    assignedTo: string | null
-    result: string | null
-    tags: string[] | null
-  }>): Promise<TaskRow> {
+  async update(id: string, data: TaskUpdateInput, source: string = 'user'): Promise<TaskRow> {
     const existing = await this.getById(id)
 
-    // 如果有状态变更，校验流转合法性
+    // 状态变更校验
     if (data.status && data.status !== existing.status) {
       const allowed = VALID_TRANSITIONS[existing.status]
       if (allowed && !allowed.includes(data.status)) {
@@ -94,20 +66,21 @@ export const taskService = {
       }
     }
 
+    // 完成时记录完成时间
     const updates: Partial<TaskInsert> = { ...data }
-
-    // 任务完成时记录完成时间
     if (data.status === 'done' || data.status === 'failed') {
       updates.completedAt = new Date()
     }
 
-    const updated = await taskRepo.update(id, updates)
+    // 直接走 repo，不调 super.update，因为已经 getById 并需要自定义 updates
+    const updated = await this.repo.update(id, updates)
     if (!updated) {
       throw new AppError(500, CODE.INTERNAL_ERROR, `Failed to update task '${id}'`)
     }
 
-    await activityRepo.log('task', id, 'updated', 'user', { fields: Object.keys(data) })
-    logger.info({ taskId: id, status: data.status }, 'Task updated')
+    const { activityRepo } = await import('../db/repo/activity.js')
+    await activityRepo.log('task', id, 'updated', source, this.updateDetail(data))
+    this.logger.info({ taskId: id, status: data.status }, 'Task updated')
 
     if (data.status === 'done') {
       emitEvent('task.completed', { taskId: id })
@@ -116,25 +89,33 @@ export const taskService = {
     }
 
     return updated
-  },
+  }
 
-  async remove(id: string): Promise<void> {
-    const existing = await this.getById(id)
-    await taskRepo.remove(id)
+  protected afterCreate(row: TaskRow, data: TaskCreateInput): void {
+    emitEvent('task.created', { taskId: row.id, title: data.title })
+  }
 
-    await activityRepo.log('task', id, 'deleted', 'user', { title: existing.title })
-    logger.info({ taskId: id }, 'Task deleted')
-  },
+  protected createDetail(data: TaskCreateInput): Record<string, unknown> {
+    return { title: data.title, assignedTo: data.assignedTo ?? null }
+  }
+
+  protected removeDetail(existing: TaskRow): Record<string, unknown> {
+    return { title: existing.title }
+  }
+
+  // ── 独有方法 ─────────────────────────────────────────
 
   async assign(taskId: string, agentId: string): Promise<TaskRow> {
     return this.update(taskId, { assignedTo: agentId, status: 'assigned' })
-  },
+  }
 
   async complete(taskId: string, result?: string): Promise<TaskRow> {
     return this.update(taskId, { status: 'done', result: result ?? null })
-  },
+  }
 
   async fail(taskId: string, error?: string): Promise<TaskRow> {
     return this.update(taskId, { status: 'failed', result: error ?? null })
-  },
+  }
 }
+
+export const taskService = new TaskService()

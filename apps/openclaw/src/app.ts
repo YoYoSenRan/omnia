@@ -15,6 +15,7 @@ import { cors } from 'hono/cors'
 import { logger as honoLogger } from 'hono/logger'
 import { API_KEY, SERVICE_TOKEN, CORS_ORIGIN } from './utils/env.js'
 import { logger } from './utils/logger.js'
+import { ZodError } from 'zod'
 import { AppError } from './http/errors.js'
 import { CODE } from './http/code.js'
 import { fail } from './http/response.js'
@@ -74,6 +75,11 @@ app.route('/open/sessions', sessionOpenRoutes)
 
 app.onError((err, c) => {
   const reqId = c.get('reqId') as string | undefined
+
+  if (err instanceof ZodError) {
+    const details = err.issues.map((e) => `${e.path.join('.')}: ${e.message}`)
+    return fail(c, 400, CODE.BAD_REQUEST, `Validation failed: ${details.join('; ')}`)
+  }
 
   if (err instanceof AppError) {
     logger.warn({ reqId, code: err.code, err }, err.message)

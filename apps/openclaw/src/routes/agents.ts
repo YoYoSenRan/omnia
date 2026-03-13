@@ -1,75 +1,28 @@
 /**
- * Agent 路由（薄壳）
+ * Agent 路由映射
  *
  * @module routes/agents
  */
 
 import { Hono } from 'hono'
-import { agentService } from '../services/agent.js'
-import { activityRepo } from '../db/repo/activity.js'
-import { ok } from '../http/response.js'
+import { agentController as ctrl } from '../controllers/agent.js'
 
-// ── 内部路由（/api/agents） ──────────────────────────────
+// ── /api/agents ──────────────────────────────────────────
 
 export const agentRoutes = new Hono()
 
-agentRoutes.get('/', async (c) => {
-  const agents = await agentService.list()
-  return ok(c, agents)
-})
+agentRoutes.get('/', ctrl.list)
+agentRoutes.get('/:id', ctrl.getById)
+agentRoutes.post('/', ctrl.create)
+agentRoutes.put('/:id', ctrl.update)
+agentRoutes.delete('/:id', ctrl.remove)
+agentRoutes.get('/:id/soul', ctrl.getSoul)
+agentRoutes.put('/:id/soul', ctrl.updateSoul)
+agentRoutes.get('/:id/logs', ctrl.getLogs)
 
-agentRoutes.get('/:id', async (c) => {
-  const agent = await agentService.getById(c.req.param('id'))
-  return ok(c, agent)
-})
-
-agentRoutes.post('/', async (c) => {
-  const body = await c.req.json()
-  const agent = await agentService.create(body)
-  return ok(c, agent, 201)
-})
-
-agentRoutes.put('/:id', async (c) => {
-  const body = await c.req.json()
-  const agent = await agentService.update(c.req.param('id'), body)
-  return ok(c, agent)
-})
-
-agentRoutes.delete('/:id', async (c) => {
-  const { id } = c.req.param()
-  await agentService.remove(id)
-  return ok(c, { id })
-})
-
-agentRoutes.get('/:id/soul', async (c) => {
-  const soul = await agentService.getSoul(c.req.param('id'))
-  return ok(c, { soul })
-})
-
-agentRoutes.put('/:id/soul', async (c) => {
-  const { id } = c.req.param()
-  const { soul } = await c.req.json()
-  await agentService.updateSoul(id, soul)
-  return ok(c, { id, soul })
-})
-
-agentRoutes.get('/:id/logs', async (c) => {
-  const { id } = c.req.param()
-  const limit = Number(c.req.query('limit') ?? 50)
-  const logs = await activityRepo.findByEntity('agent', id, limit)
-  return ok(c, logs)
-})
-
-// ── 开放路由（/open/agents） ─────────────────────────────
+// ── /open/agents ─────────────────────────────────────────
 
 export const agentOpenRoutes = new Hono()
 
-agentOpenRoutes.get('/', async (c) => {
-  const agents = await agentService.list()
-  return ok(c, agents)
-})
-
-agentOpenRoutes.get('/:id', async (c) => {
-  const agent = await agentService.getById(c.req.param('id'))
-  return ok(c, agent)
-})
+agentOpenRoutes.get('/', ctrl.list)
+agentOpenRoutes.get('/:id', ctrl.getById)

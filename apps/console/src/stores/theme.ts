@@ -1,30 +1,51 @@
 import { create } from "zustand"
 
-type Theme = "light" | "dark"
+type Theme = "system" | "light" | "dark"
+type ResolvedTheme = "light" | "dark"
 
 const THEME_STORAGE_KEY = "omnia-console-theme"
+const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+
+function getSystemTheme(): ResolvedTheme {
+  return mediaQuery.matches ? "dark" : "light"
+}
+
+function applyTheme(theme: Theme): ResolvedTheme {
+  const resolved = theme === "system" ? getSystemTheme() : theme
+  document.documentElement.classList.toggle("dark", resolved === "dark")
+  return resolved
+}
 
 /** 从 localStorage 或系统偏好读取初始主题 */
 function getInitialTheme(): Theme {
   const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null
-  if (stored === "light" || stored === "dark") return stored
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+  if (stored === "system" || stored === "light" || stored === "dark") return stored
+  return "system"
 }
 
 interface ThemeState {
   theme: Theme
-  toggleTheme: () => void
+  resolvedTheme: ResolvedTheme
+  setTheme: (theme: Theme) => void
 }
 
-export const useThemeStore = create<ThemeState>((set, get) => ({
-  theme: getInitialTheme(),
-  toggleTheme: () => {
-    const next = get().theme === "light" ? "dark" : "light"
-    document.documentElement.classList.toggle("dark", next === "dark")
-    localStorage.setItem(THEME_STORAGE_KEY, next)
-    set({ theme: next })
+const initialTheme = getInitialTheme()
+
+export const useThemeStore = create<ThemeState>((set) => ({
+  theme: initialTheme,
+  resolvedTheme: applyTheme(initialTheme),
+  setTheme: (theme) => {
+    const resolvedTheme = applyTheme(theme)
+    localStorage.setItem(THEME_STORAGE_KEY, theme)
+    set({ theme, resolvedTheme })
   },
 }))
 
-/** 初始化时同步 DOM class */
-document.documentElement.classList.toggle("dark", getInitialTheme() === "dark")
+mediaQuery.addEventListener("change", () => {
+  const { theme } = useThemeStore.getState()
+  if (theme !== "system") return
+
+  useThemeStore.setState({
+    resolvedTheme: applyTheme("system"),
+  })
+})

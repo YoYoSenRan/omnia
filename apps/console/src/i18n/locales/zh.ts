@@ -10,6 +10,11 @@ export default {
     empty: "—",
     create: "新建",
     toggleTheme: "切换主题",
+    languageMenu: "语言菜单",
+    themeMenu: "主题菜单",
+    themeSystem: "跟随系统",
+    themeLight: "浅色",
+    themeDark: "深色",
   },
 
   /* ── 侧边栏导航 ────────────────────────────────── */

@@ -35,4 +35,9 @@ export const sessionRepo = {
       .returning()
     return row
   },
+
+  async remove(id: string): Promise<boolean> {
+    const result = await db.delete(sessions).where(eq(sessions.id, id))
+    return (result.rowCount ?? 0) > 0
+  },
 }
