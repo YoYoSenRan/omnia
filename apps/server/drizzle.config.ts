@@ -1,11 +1,10 @@
 import { defineConfig } from 'drizzle-kit'
-import { join } from 'node:path'
 
 export default defineConfig({
   schema: './src/db/schema.ts',
   out: './drizzle',
-  dialect: 'sqlite',
+  dialect: 'postgresql',
   dbCredentials: {
-    url: join(process.env.HOME ?? '.', '.omnia', 'omnia.db'),
+    url: process.env.DATABASE_URL ?? 'postgresql://omnia:omnia@localhost:5432/omnia_app',
   },
 })

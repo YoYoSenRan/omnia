@@ -1,76 +1,87 @@
+/**
+ * Hono 应用初始化
+ *
+ * 路由分组：
+ * - /health — 无鉴权，健康检查
+ * - /api/*  — API Key 鉴权，供 web 前端使用
+ *
+ * @module app
+ */
+
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { logger } from 'hono/logger'
-import type { AdapterManager } from './adapter'
-import { agentRoutes } from './routes/agents'
-import { skillRoutes } from './routes/skills'
-import { sessionRoutes } from './routes/sessions'
-import { chatRoutes } from './routes/chat'
-import { modelRoutes } from './routes/models'
-import { cronRoutes } from './routes/cron'
-import { workspaceRoutes } from './routes/workspace'
-import { sseRoutes } from './routes/sse'
-import { connectionRoutes } from './routes/connections'
-import { projectRoutes } from './routes/projects'
-import { ok, fail } from './lib/response'
+import { logger as honoLogger } from 'hono/logger'
+import { API_KEY, CORS_ORIGIN } from './lib/env.js'
+import { logger } from './lib/logger.js'
+import { AppError } from './lib/errors.js'
+import { CODE } from './lib/code.js'
+import { fail } from './lib/response.js'
+import { apiKeyAuth } from './lib/auth.js'
+import { healthRoutes } from './routes/health.js'
 
-export function createApp(manager: AdapterManager) {
-  const app = new Hono()
-
-  // Middleware
-  app.use('*', logger())
-  app.use('/api/*', cors())
-
-  // Global error handler
-  app.onError((err, c) => {
-    console.error('[API Error]', err.message)
-    return fail(c, 500, 'INTERNAL_ERROR', err.message)
-  })
-
-  // Gateway connection guard (skip status, workspace, events, connections)
-  app.use('/api/*', async (c, next) => {
-    if (c.req.path === '/api/status') return next()
-    if (c.req.path.startsWith('/api/workspace')) return next()
-    if (c.req.path.startsWith('/api/events')) return next()
-    if (c.req.path.startsWith('/api/connections')) return next()
-    if (c.req.path.startsWith('/api/projects')) return next()
-    const active = manager.getActive()
-    if (!active || !active.isConnected()) {
-      return fail(c, 503, 'GATEWAY_DISCONNECTED', 'Gateway disconnected')
-    }
-    return next()
-  })
-
-  // Routes
-  app.route('/api/connections', connectionRoutes(manager))
-  app.route('/api/projects', projectRoutes(manager))
-  app.route('/api/agents', agentRoutes(manager))
-  app.route('/api/skills', skillRoutes(manager))
-  app.route('/api/sessions', sessionRoutes(manager))
-  app.route('/api/chat', chatRoutes(manager))
-  app.route('/api/models', modelRoutes(manager))
-  app.route('/api/cron', cronRoutes(manager))
-  app.route('/api/workspace', workspaceRoutes())
-  app.route('/api/events', sseRoutes(manager))
-
-  // System status (no Gateway needed)
-  app.get('/api/status', (c) => {
-    const active = manager.getActive()
-    return ok(c, {
-      gateway: active?.getStatus() ?? 'disconnected',
-      uptime: process.uptime(),
-    })
-  })
-
-  // Gateway health (proxied)
-  app.get('/api/health', async (c) => {
-    const active = manager.getActive()
-    if (!active || !active.isConnected()) {
-      return fail(c, 503, 'GATEWAY_DISCONNECTED', 'Gateway disconnected')
-    }
-    const health = await active.getHealth()
-    return ok(c, health)
-  })
-
-  return app
+/** 自定义 Hono 变量类型 */
+type AppVariables = {
+  reqId: string
 }
+
+/** Hono 应用实例 */
+export const app = new Hono<{ Variables: AppVariables }>()
+
+// ── 全局中间件 ────────────────────────────────────────────
+
+app.use(
+  '*',
+  cors({
+    origin: CORS_ORIGIN,
+    allowHeaders: ['Content-Type', 'Authorization'],
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  }),
+)
+
+app.use('*', honoLogger())
+
+/* 请求 ID + 结构化日志 */
+app.use('*', async (c, next) => {
+  const reqId = c.req.header('X-Request-Id') ?? crypto.randomUUID()
+  c.set('reqId', reqId)
+  c.header('X-Request-Id', reqId)
+
+  const start = Date.now()
+  await next()
+  const duration = Date.now() - start
+
+  logger.info(
+    { reqId, method: c.req.method, path: c.req.path, status: c.res.status, duration },
+    'Request completed',
+  )
+})
+
+// ── 公开路由 ──────────────────────────────────────────────
+
+app.route('/', healthRoutes)
+
+// ── API 路由（API Key 鉴权） ─────────────────────────────
+
+app.use('/api/*', apiKeyAuth(API_KEY))
+
+/* 后续按业务需求注册更多路由 */
+
+// ── 全局错误处理 ──────────────────────────────────────────
+
+app.onError((err, c) => {
+  const reqId = c.get('reqId') as string | undefined
+
+  if (err instanceof AppError) {
+    logger.warn({ reqId, code: err.code, err }, err.message)
+    return fail(c, err.httpStatus, err.code, err.message)
+  }
+
+  logger.error({ reqId, err }, 'Unhandled error')
+  const message =
+    process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+  return fail(c, 500, CODE.INTERNAL_ERROR, message)
+})
+
+app.notFound((c) => {
+  return fail(c, 404, CODE.NOT_FOUND, `Route not found: ${c.req.method} ${c.req.path}`)
+})
